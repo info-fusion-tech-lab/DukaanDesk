@@ -1,10 +1,9 @@
 import os
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
+from tools.paths import STORAGE_PATH
 
-# Derive paths relative to the project root directory
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PRODUCT_QR_DIR = os.path.join(BASE_DIR, "storage", "ProductQRs")
+PRODUCT_QR_DIR = os.path.join(STORAGE_PATH, "ProductQRs")
 
 def generate_labeled_qrcode(product_code, save_filename=None):
     """

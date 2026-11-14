@@ -1,12 +1,9 @@
 import os
 import json
 from datetime import datetime
+from tools.paths import STORAGE_PATH
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STORAGE_PATH = os.path.join(BASE_DIR, "storage")
 CUSTOMER_FILE = os.path.join(STORAGE_PATH, "CustomerList.json")
-
-os.makedirs(STORAGE_PATH, exist_ok=True)
 
 # Sample Schema structure for context:
 # {

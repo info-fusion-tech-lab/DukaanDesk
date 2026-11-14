@@ -1,8 +1,9 @@
 import sys
 import os
+import secrets
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 
-# Ensure tools module can be imported properly
+APP_ROOT = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from tools.GenerateCode import CodeGenerator
@@ -11,10 +12,14 @@ import tools.StorageManager as storage
 import tools.CustomerManager as customer_manager
 import tools.SalesManager as sales_manager
 
-QR_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "storage", "ProductQRs")
+QR_DIR = os.path.join(storage.STORAGE_PATH, "ProductQRs")
 
-app = Flask(__name__, template_folder='frontend/templates', static_folder='frontend/static')
-app.secret_key = "new_fashion_house_secret_key"
+app = Flask(
+    __name__,
+    template_folder=os.path.join(APP_ROOT, "frontend", "templates"),
+    static_folder=os.path.join(APP_ROOT, "frontend", "static"),
+)
+app.secret_key = os.environ.get("SHOPMANAGER_SECRET_KEY") or secrets.token_hex(32)
 
 code_gen = CodeGenerator()
 
@@ -35,7 +40,12 @@ def landing():
 # ---------- FAVICON ----------
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(app.root_path, 'store.ico', mimetype='image/vnd.microsoft.icon')
+    return send_from_directory(APP_ROOT, 'store.ico', mimetype='image/vnd.microsoft.icon')
+
+
+@app.route('/health')
+def health():
+    return jsonify({"status": "ok"})
 
 # ---------- DASHBOARD ----------
 @app.route('/dashboard')
@@ -266,6 +276,17 @@ def reports():
 
 # ---------- MAIN ----------
 if __name__ == '__main__':
-    import webbrowser
-    webbrowser.open('http://127.0.0.1:5000')
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    host = os.environ.get("SHOPMANAGER_HOST", "127.0.0.1")
+    port = int(os.environ.get("SHOPMANAGER_PORT", "5000"))
+    if os.environ.get("SHOPMANAGER_DESKTOP") == "1":
+        from waitress import serve
+        serve(app, host=host, port=port, threads=8)
+    else:
+        import webbrowser
+        webbrowser.open(f'http://{host}:{port}')
+        app.run(
+            host=host,
+            port=port,
+            debug=os.environ.get("SHOPMANAGER_DEBUG", "0") == "1",
+            use_reloader=False,
+        )

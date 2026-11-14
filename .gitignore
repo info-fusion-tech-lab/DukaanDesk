@@ -49,4 +49,17 @@ config.local.py
 # test files
 AppStartup.bat
 main.py
-store.ico
+
+# Electron desktop application
+desktop/node_modules/
+desktop/dist/
+desktop/release/
+desktop/*.tsbuildinfo
+dist/
+build/
+
+# Vercel marketing website
+website/node_modules/
+website/.next/
+website/out/
+website/next-env.d.ts

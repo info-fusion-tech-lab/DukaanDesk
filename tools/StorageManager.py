@@ -1,11 +1,8 @@
 import os
 import json
+from tools.paths import STORAGE_PATH
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STORAGE_PATH = os.path.join(BASE_DIR, "storage")
 JSON_FILE = os.path.join(STORAGE_PATH, "ProductList.json")
-
-os.makedirs(STORAGE_PATH, exist_ok=True)
 
 def load_products():
     if not os.path.exists(JSON_FILE) or os.path.getsize(JSON_FILE) == 0:

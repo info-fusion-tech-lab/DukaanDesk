@@ -5,15 +5,11 @@ from datetime import datetime
 
 import tools.StorageManager as storage
 import tools.CustomerManager as customer_manager
+from tools.paths import STORAGE_PATH
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STORAGE_PATH = os.path.join(BASE_DIR, "storage")
 SALES_FILE = os.path.join(STORAGE_PATH, "SalesLog.json")
 
 VALID_PAYMENT_TYPES = ["cash", "online", "udhari", "split"]
-
-os.makedirs(STORAGE_PATH, exist_ok=True)
-
 
 def load_sales():
     if not os.path.exists(SALES_FILE) or os.path.getsize(SALES_FILE) == 0:
