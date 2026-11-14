@@ -192,6 +192,11 @@ files. Set `NEXT_PUBLIC_RELEASES_URL` in Vercel if releases are hosted at a
 different public URL. A public download page cannot deliver assets from a
 private GitHub repository to visitors without repository access.
 
+The site exports `robots.txt` and `sitemap.xml` for its Vercel URL. After
+deployment, submit `https://shop-management-system-website.vercel.app/sitemap.xml`
+in Google Search Console or Bing Webmaster Tools. Search engines may take time
+to index the pages, and submission does not guarantee ranking or inclusion.
+
 Packaged installers are currently unsigned. Windows and macOS may show
 security warnings until platform code-signing certificates are configured.
 
