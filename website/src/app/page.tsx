@@ -23,11 +23,12 @@ export default function HomePage() {
     <>
       <section className="hero">
         <div className="hero-inner">
-          <p className="eyebrow">A desktop toolkit for independent shops</p>
-          <h1>Run the day-to-day. Keep your records close.</h1>
+          <p className="eyebrow">Free offline shop management for independent shops</p>
+          <h1>Manage your shop. Keep your records on your computer.</h1>
           <p className="lead">
-            Manage inventory, customers, sales and reports from one straightforward
-            desktop app. Your business records are stored locally on your computer.
+            DukaanDesk is free shop management software for inventory, customer
+            ledgers, sales and reports. The desktop app works offline and stores
+            business records locally on your computer.
           </p>
           <div className="actions">
             <Link className="button" href="/download/">Explore downloads <span aria-hidden="true">→</span></Link>
@@ -37,7 +38,7 @@ export default function HomePage() {
           <div className="preview-wrap" aria-label="Illustration of the shop dashboard">
             <div className="preview">
               <div className="preview-side">
-                <div className="preview-logo">Shop Manager</div>
+                <div className="preview-logo">DukaanDesk</div>
                 <div className="preview-nav">
                   <span>Dashboard</span><span>Inventory</span><span>Customers</span><span>Sales</span><span>Reports</span>
                 </div>
@@ -76,7 +77,7 @@ export default function HomePage() {
       <section className="section">
         <div className="split">
           <div className="split-copy">
-            <p className="eyebrow">Local by design</p>
+            <p className="eyebrow">Offline and local by design</p>
             <h2>Your shop records stay on your device.</h2>
             <p>
               The desktop app saves its working data on the computer where it is

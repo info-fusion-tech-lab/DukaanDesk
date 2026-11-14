@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Product",
-  description: "An overview of the Shop Management System desktop app.",
+  title: "Offline Shop Management App",
+  description:
+    "Explore DukaanDesk, a free offline shop management app for inventory, customer balances, sales and reports.",
 };
 
 export default function ProductPage() {

@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ shop_name }} – Premium Shop Management</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>DukaanDesk – Free Offline Shop Management</title>
+    <meta name="description" content="DukaanDesk is free offline shop management software for inventory, customer ledgers, sales and reports. Your records stay on your computer.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fonts.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
@@ -158,8 +159,8 @@
     </header>
 
     <section class="hero">
-        <h1>Smart Shop Management</h1>
-        <p>Effortlessly manage your inventory, customers, and sales – all in one place.</p>
+        <h1>Free Offline Shop Management</h1>
+        <p>Manage inventory, customer ledgers, sales and reports in one simple desktop app. Your records stay on your computer.</p>
         <a href="{{ url_for('dashboard') }}" class="btn-cta">
             <i class="fas fa-rocket"></i> Launch Dashboard
         </a>

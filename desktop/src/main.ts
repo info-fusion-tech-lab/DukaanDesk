@@ -20,7 +20,11 @@ import {
 } from "electron";
 
 const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
-app.setName("Shop Management System");
+app.setName("DukaanDesk");
+app.setPath(
+  "userData",
+  path.join(app.getPath("appData"), "Shop Management System"),
+);
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) {
   app.quit();
@@ -148,12 +152,12 @@ function startBackend(port: number, encryptionKey: string): ChildProcess {
 
   if (app.isPackaged) {
     const executable = process.platform === "win32"
-      ? "ShopManagementBackend.exe"
-      : "ShopManagementBackend";
+      ? "DukaanDeskBackend.exe"
+      : "DukaanDeskBackend";
     const backendPath = path.join(
       process.resourcesPath,
       "backend",
-      "ShopManagementBackend",
+      "DukaanDeskBackend",
       executable,
     );
     backend = spawn(backendPath, [], {
@@ -186,7 +190,7 @@ function startBackend(port: number, encryptionKey: string): ChildProcess {
     if (!isQuitting && BrowserWindow.getAllWindows().length > 0) {
       const reason = signal ? `signal ${signal}` : `exit code ${code}`;
       dialog.showErrorBox(
-        "Shop Management System stopped",
+        "DukaanDesk stopped",
         `The local application service stopped unexpectedly (${reason}).`,
       );
       app.quit();
@@ -254,7 +258,7 @@ function installApplicationMenu(): void {
           label: "Download and product information",
           click: () => {
             void shell.openExternal(
-              "https://github.com/info-fusion-tech-lab/ShopManagementSystem/releases/latest",
+              "https://github.com/info-fusion-tech-lab/DukaanDesk/releases/latest",
             );
           },
         },
@@ -272,7 +276,7 @@ function createWindow(url: string): void {
     height: 960,
     minWidth: 960,
     minHeight: 640,
-    title: "Shop Management System",
+    title: "DukaanDesk",
     icon: iconPath,
     webPreferences: {
       contextIsolation: true,
@@ -303,7 +307,7 @@ if (hasSingleInstanceLock) {
       createWindow(url);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      dialog.showErrorBox("Could not start Shop Management System", message);
+      dialog.showErrorBox("Could not start DukaanDesk", message);
       app.quit();
     }
   });

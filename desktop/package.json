@@ -1,8 +1,8 @@
 {
-  "name": "shop-management-desktop",
+  "name": "dukaandesk-desktop",
   "version": "1.0.0",
   "private": true,
-  "description": "Desktop application for Shop Management System",
+  "description": "Free offline desktop shop management application",
   "author": "Info Fusion Tech Lab",
   "main": "dist/main.js",
   "scripts": {
@@ -18,7 +18,7 @@
   },
   "build": {
     "appId": "com.infofusion.shopmanagementsystem",
-    "productName": "Shop Management System",
+    "productName": "DukaanDesk",
     "asar": true,
     "files": [
       "dist/**/*",

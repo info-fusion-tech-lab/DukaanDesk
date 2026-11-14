@@ -4,8 +4,8 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <Link className="brand footer-brand" href="/">
-        <span className="brand-mark" aria-hidden="true">S</span>
-        <span>Shop Management System</span>
+        <span className="brand-mark" aria-hidden="true">D</span>
+        <span>DukaanDesk</span>
       </Link>
       <p>Simple shop operations, with your business data kept on your device.</p>
       <div className="footer-links">
@@ -15,7 +15,7 @@ export function SiteFooter() {
         <Link href="/about/">About</Link>
         <Link href="/download/">Download</Link>
       </div>
-      <small>© {new Date().getFullYear()} Shop Management System</small>
+      <small>© {new Date().getFullYear()} DukaanDesk</small>
     </footer>
   );
 }

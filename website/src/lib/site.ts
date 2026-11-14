@@ -1,2 +1,2 @@
-export const siteName = "Shop Management System";
-export const siteUrl = "https://shop-management-system-website.vercel.app";
+export const siteName = "DukaanDesk";
+export const siteUrl = "https://dukaandesk-info-fusion.vercel.app";

@@ -26,7 +26,7 @@ def main():
         "--noconfirm",
         "--clean",
         "--name",
-        "ShopManagementBackend",
+        "DukaanDeskBackend",
         "--distpath",
         str(output_directory),
         "--workpath",

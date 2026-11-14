@@ -10,9 +10,9 @@ const links = [
 export function SiteHeader() {
   return (
     <header className="site-header">
-      <Link className="brand" href="/" aria-label="Shop Management System home">
-        <span className="brand-mark" aria-hidden="true">S</span>
-        <span>Shop Management System</span>
+      <Link className="brand" href="/" aria-label="DukaanDesk home">
+        <span className="brand-mark" aria-hidden="true">D</span>
+        <span>DukaanDesk</span>
       </Link>
       <nav className="site-nav" aria-label="Main navigation">
         {links.map((link) => (

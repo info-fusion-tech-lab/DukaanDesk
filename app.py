@@ -94,7 +94,7 @@ def inject_shop_info():
     account_id = session.get("account_id")
     account = accounts.get_account(account_id) if account_id else None
     return {
-        "shop_name": account["shop_name"] if account else "Shop Management System",
+        "shop_name": account["shop_name"] if account else "DukaanDesk",
         "shop_owner": account["username"] if account else "",
         "is_shop_owner": bool(account and account.get("is_owner")),
     }

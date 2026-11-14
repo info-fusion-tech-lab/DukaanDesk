@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "About the Shop Management System product.",
+  description:
+    "Learn about DukaanDesk, free offline shop management software that keeps business records on your device.",
 };
 
 export default function AboutPage() {
@@ -13,8 +14,8 @@ export default function AboutPage() {
           <p className="eyebrow">About the product</p>
           <h1>Useful shop tools without a complicated setup.</h1>
           <p className="lead">
-            Shop Management System brings common inventory, customer and sales
-            tasks together in a desktop application for independent retailers.
+            DukaanDesk brings common inventory, customer and sales tasks
+            together in a desktop application for independent retailers.
           </p>
         </div>
       </section>

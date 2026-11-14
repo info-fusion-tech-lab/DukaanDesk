@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Features",
-  description: "Inventory, customer ledger, sales and reporting features.",
+  title: "Shop Management Features",
+  description:
+    "Explore DukaanDesk features for inventory management, customer ledgers, QR labels, retail sales and reports.",
 };
 
 const features = [

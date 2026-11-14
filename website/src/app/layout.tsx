@@ -8,20 +8,27 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: siteName,
   title: {
-    default: "Shop Management System | Simple tools for independent shops",
-    template: "%s | Shop Management System",
+    default: "DukaanDesk | Free Offline Shop Management Software",
+    template: "%s | DukaanDesk",
   },
   description:
-    "Manage products, customers, sales and reports in a straightforward desktop app. Your shop records stay on your computer.",
+    "Free offline shop management software for small shops. Track inventory, customers, sales and reports on your computer with no cloud account.",
+  keywords: [
+    "DukaanDesk",
+    "free offline shop management software",
+    "inventory management for small shops",
+    "retail sales tracker",
+    "local shop management app",
+  ],
   verification: {
     google: "Lv7vRuVweaHAf0XGFsruOn4nYA7z7d8SSC0QVVH8Ex4",
   },
   openGraph: {
     type: "website",
     siteName,
-    title: "Shop Management System | Simple tools for independent shops",
+    title: "DukaanDesk | Free Offline Shop Management Software",
     description:
-      "Manage products, customers, sales and reports in a straightforward desktop app. Your shop records stay on your computer.",
+      "Manage inventory, customer ledgers, sales and reports with a free desktop app that stores records locally on your computer.",
   },
 };
 

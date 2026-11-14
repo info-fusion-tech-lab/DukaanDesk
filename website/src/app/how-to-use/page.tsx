@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "How to use",
-  description: "Install and get started with the Shop Management System desktop app.",
+  title: "How to Use DukaanDesk",
+  description:
+    "Install DukaanDesk and get started with local inventory, customer ledgers and sales tracking.",
 };
 
 const steps = [
   ["Download the installer", "Choose the package for your operating system from the latest releases page and install it."],
-  ["Open the desktop app", "Start Shop Management System from your applications list. The local service starts automatically."],
+  ["Open the desktop app", "Start DukaanDesk from your applications list. The local service starts automatically."],
   ["Add your inventory", "Enter product names, prices, sizes, quantities and minimum stock levels. Product codes and QR labels are generated for you."],
   ["Register customers", "Add customers by name and phone number when you need to keep a ledger or record credit."],
   ["Record sales", "Add one or more products, choose the payment method and complete the sale. Stock is updated by the app."],
