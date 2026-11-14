@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ shop_name }} – Premium Shop Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8f9fe;
+            color: #1a1a2e;
+            line-height:1.6;
+        }
+        .landing-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top:0; left:0; right:0;
+            z-index:1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap:10px;
+        }
+        .logo i { color: #6C63FF; }
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items:center;
+        }
+        .nav-links a {
+            color: rgba(255,255,255,0.7);
+            text-decoration:none;
+            font-weight:500;
+            transition:0.3s;
+        }
+        .nav-links a:hover { color:white; }
+        .btn-nav {
+            background: #6C63FF;
+            padding: 10px 24px;
+            border-radius: 30px;
+            color: white !important;
+            font-weight:600;
+            transition:0.3s;
+        }
+        .btn-nav:hover {
+            background: #5A52D5;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(108,99,255,0.4);
+        }
+        .hero {
+            padding: 140px 40px 80px;
+            background: linear-gradient(135deg, #f0f2f8 0%, #e8eaf5 100%);
+            text-align:center;
+        }
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #6C63FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero p {
+            font-size: 20px;
+            color: #6b6b8a;
+            max-width: 600px;
+            margin: 0 auto 30px;
+        }
+        .hero .btn-cta {
+            background: #6C63FF;
+            color: white;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition:0.3s;
+            box-shadow: 0 8px 30px rgba(108,99,255,0.3);
+        }
+        .hero .btn-cta:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(108,99,255,0.4);
+        }
+        .features {
+            padding: 80px 40px;
+            max-width: 1200px;
+            margin:0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px,1fr));
+            gap:40px;
+        }
+        .feature-card {
+            background: white;
+            padding: 30px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition:0.3s;
+            text-align:center;
+        }
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 40px rgba(108,99,255,0.12);
+        }
+        .feature-card i {
+            font-size: 40px;
+            color: #6C63FF;
+            margin-bottom:16px;
+        }
+        .feature-card h3 {
+            font-size:20px;
+            margin-bottom:8px;
+        }
+        .feature-card p {
+            color: #6b6b8a;
+            font-size:14px;
+        }
+        .footer-landing {
+            background: #1a1a2e;
+            color: rgba(255,255,255,0.6);
+            text-align:center;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .footer-landing a {
+            color: #6C63FF;
+            text-decoration:none;
+        }
+        .footer-landing a:hover { text-decoration:underline; }
+        @media (max-width:768px) {
+            .landing-header { flex-direction:column; gap:12px; padding:16px; }
+            .nav-links { flex-wrap:wrap; justify-content:center; gap:16px; }
+            .hero h1 { font-size:36px; }
+            .hero p { font-size:16px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="landing-header">
+        <div class="logo"><i class="fas fa-store"></i> {{ shop_name }}</div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#about">About</a>
+            <a href="{{ url_for('dashboard') }}" class="btn-nav">Go to Dashboard</a>
+        </div>
+    </header>
+
+    <section class="hero">
+        <h1>Smart Shop Management</h1>
+        <p>Effortlessly manage your inventory, customers, and sales – all in one place.</p>
+        <a href="{{ url_for('dashboard') }}" class="btn-cta">
+            <i class="fas fa-rocket"></i> Launch Dashboard
+        </a>
+    </section>
+
+    <section class="features" id="features">
+        <div class="feature-card">
+            <i class="fas fa-boxes"></i>
+            <h3>Inventory Control</h3>
+            <p>Track stock levels, get low-stock alerts, and generate QR codes for each product.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-users"></i>
+            <h3>Customer Management</h3>
+            <p>Maintain customer ledger, record transactions, and view complete history.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-shopping-cart"></i>
+            <h3>Smart Sales</h3>
+            <p>Single or bulk sales, support for cash, online, udhari, and split payments.</p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-chart-line"></i>
+            <h3>Insights & Reports</h3>
+            <p>Get a clear overview of your business performance at a glance.</p>
+        </div>
+    </section>
+
+    <footer class="footer-landing">
+        <p>&copy; 2026 {{ shop_name }}. Built with ❤️ by {{ shop_owner }}</p>
+        <p style="margin-top:8px;font-size:14px;">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a> &middot;
+            <a href="{{ url_for('inventory') }}">Inventory</a> &middot;
+            <a href="{{ url_for('customers') }}">Customers</a> &middot;
+            <a href="{{ url_for('sales_page') }}">Sales</a>
+        </p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,518 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory - {{ shop_name }}{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-boxes" style="color: var(--primary); margin-right: 10px;"></i>Inventory Management
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="flex-between flex-wrap" style="margin-bottom: 24px; gap: 12px;">
+    <p style="color: var(--text-secondary); font-size: 14px;">Manage your product inventory</p>
+    <button class="btn btn-primary" onclick="openModal('addProductModal')">
+        <i class="fas fa-plus-circle"></i> Add Product
+    </button>
+</div>
+
+<!-- Inventory Stats -->
+{% set total_products = products|length if products else 0 %}
+{% set total_stock = 0 %}
+{% set low_stock_count = 0 %}
+{% if products %}
+    {% for code, product in products.items() %}
+        {% set qty = product.Quantity|default(0)|int %}
+        {% set min_stock = product.MinStockLevel|default(5)|int %}
+        {% set total_stock = total_stock + qty %}
+        {% if qty <= min_stock %}
+            {% set low_stock_count = low_stock_count + 1 %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+<div class="dashboard-stats" style="margin-bottom: 24px;">
+    <div class="stat-card" style="border-left: 4px solid var(--primary);">
+        <div class="stat-label">Total Products</div>
+        <div class="stat-value">{{ total_products }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 4px solid var(--warning);">
+        <div class="stat-label">Total Stock Items</div>
+        <div class="stat-value">{{ total_stock }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 4px solid var(--danger);">
+        <div class="stat-label">Low Stock Items</div>
+        <div class="stat-value">{{ low_stock_count }}</div>
+    </div>
+</div>
+
+<!-- Search -->
+<div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 200px;">
+        <input type="text" class="form-control" placeholder="🔍 Search products by name or code..." id="productSearch" onkeyup="filterProducts()">
+    </div>
+</div>
+
+<!-- Products Grid -->
+<div class="products-grid" id="productsGrid">
+    {% if products and products|length > 0 %}
+        {% for code, product in products.items() %}
+        {% set stock = product.Quantity|default(0)|int %}
+        {% set min_stock = product.MinStockLevel|default(5)|int %}
+        <div class="product-card" data-name="{{ product.Name|lower }}" data-code="{{ code|lower }}">
+            <div class="product-image">
+                <i class="fas fa-box"></i>
+                <div class="stock-badge">
+                    {% if stock <= 0 %}
+                        <span class="badge badge-danger">Out of Stock</span>
+                    {% elif stock <= min_stock %}
+                        <span class="badge badge-warning">Low Stock ({{ stock }})</span>
+                    {% else %}
+                        <span class="badge badge-success">{{ stock }} in stock</span>
+                    {% endif %}
+                </div>
+                {% if product.Category %}
+                <div style="position: absolute; bottom: 12px; left: 12px;">
+                    <span class="badge badge-primary">{{ product.Category }}</span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="product-body">
+                <div class="flex-between" style="margin-bottom: 4px;">
+                    <div class="product-name">{{ product.Name }}</div>
+                    <div class="product-price">₹{{ "%.2f"|format(product.Price|default(0)|float) }}</div>
+                </div>
+                <div class="product-category">
+                    <small>Code: <strong>{{ code }}</strong></small>
+                    {% if product.Size and product.Size != 'Normal' %}
+                        <span style="margin-left: 8px; color: var(--text-light);">| Size: {{ product.Size }}</span>
+                    {% endif %}
+                </div>
+                <div class="product-desc">
+                    {% if product.MinStockLevel %}
+                        Min Stock: {{ min_stock }}
+                    {% endif %}
+                    {% if product.Size and product.Size != 'Normal' %}
+                        | Size: {{ product.Size }}
+                    {% endif %}
+                </div>
+                <div class="product-actions">
+                    <button class="btn btn-sm btn-primary" onclick="editProduct(this)" data-code="{{ code }}">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-sm btn-info" onclick="viewQR('{{ code }}')" title="View QR Code">
+                        <i class="fas fa-qrcode"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteProduct('{{ code }}', '{{ product.Name }}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="grid-column: 1 / -1;">
+            <div class="empty-state">
+                <i class="fas fa-box-open"></i>
+                <h3>No products in inventory</h3>
+                <p>Start adding your products to manage your inventory</p>
+                <button class="btn btn-primary" onclick="openModal('addProductModal')">
+                    <i class="fas fa-plus-circle"></i> Add First Product
+                </button>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- ===== ADD PRODUCT MODAL ===== -->
+<div class="modal" id="addProductModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-plus-circle" style="color: var(--primary); margin-right: 8px;"></i>Add New Product</h3>
+            <button class="modal-close" onclick="closeModal('addProductModal')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('inventory') }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Product Name <span class="required">*</span></label>
+                    <input type="text" class="form-control" name="name" placeholder="Enter product name" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label>Selling Price (₹) <span class="required">*</span></label>
+                        <input type="number" class="form-control" name="price" placeholder="0.00" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Cost Price (₹)</label>
+                        <input type="number" class="form-control" name="cost_price" placeholder="0.00" step="0.01">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label>Quantity <span class="required">*</span></label>
+                        <input type="number" class="form-control" name="quantity" placeholder="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Min Stock Level</label>
+                        <input type="number" class="form-control" name="min_stock" placeholder="5" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Size</label>
+                        <div style="display:flex; gap:8px;">
+                            <select class="form-control" name="size" id="sizeSelectAdd" style="flex:2;" onchange="toggleCustomSize('add')">
+                                <option value="Normal">Normal</option>
+                                <option value="S">Small</option>
+                                <option value="M">Medium</option>
+                                <option value="L">Large</option>
+                                <option value="XL">XL</option>
+                                <option value="XXL">XXL</option>
+                                <option value="__custom__">✏️ Custom</option>
+                            </select>
+                            <input type="text" class="form-control" name="size_custom" id="sizeCustomAdd" placeholder="Custom size" style="flex:1; display:none;">
+                        </div>
+                        <small style="color:var(--text-light);">Select a size or choose "Custom" to enter your own.</small>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <input type="text" class="form-control" name="category" placeholder="e.g., Electronics, Clothing, Food">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <p style="font-size: 12px; color: var(--text-light);">
+                        <i class="fas fa-info-circle"></i> Product code will be auto-generated based on name, price, and size.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" style="background: var(--bg-primary); color: var(--text-secondary);" onclick="closeModal('addProductModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Product
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== EDIT PRODUCT MODAL (Dynamic) ===== -->
+<div class="modal" id="editProductModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-edit" style="color: var(--primary); margin-right: 8px;"></i>Edit Product</h3>
+            <button class="modal-close" onclick="closeModal('editProductModal')">&times;</button>
+        </div>
+        <form id="editProductForm" method="POST">
+            <div class="modal-body" id="editProductBody">
+                <div class="text-center" style="padding: 20px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i>
+                    <p style="margin-top: 12px; color: var(--text-secondary);">Loading product data...</p>
+                </div>
+            </div>
+            <div class="modal-footer" id="editProductFooter" style="display: none;">
+                <button type="button" class="btn" style="background: var(--bg-primary); color: var(--text-secondary);" onclick="closeModal('editProductModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update Product
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== QR VIEWER MODAL ===== -->
+<div class="modal" id="qrModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content" style="max-width:400px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-qrcode" style="color: var(--primary); margin-right: 8px;"></i>QR Code</h3>
+            <button class="modal-close" onclick="closeModal('qrModal')">&times;</button>
+        </div>
+        <div class="modal-body" style="text-align:center; padding:20px;">
+            <div id="qrImageContainer">
+                <img id="qrImage" src="" alt="QR Code" style="max-width:100%;">
+                <p id="qrCodeText" style="margin-top:12px; font-weight:500;"></p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" onclick="downloadQR()"><i class="fas fa-download"></i> Download</button>
+            <button class="btn" style="background:var(--bg-primary); color:var(--text-secondary);" onclick="closeModal('qrModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== TOGGLE CUSTOM SIZE ==========
+    function toggleCustomSize(prefix) {
+        const select = document.getElementById('sizeSelect' + (prefix === 'add' ? 'Add' : 'Edit'));
+        const customInput = document.getElementById('sizeCustom' + (prefix === 'add' ? 'Add' : 'Edit'));
+        if (select.value === '__custom__') {
+            customInput.style.display = 'block';
+            customInput.required = true;
+        } else {
+            customInput.style.display = 'none';
+            customInput.required = false;
+            customInput.value = '';
+        }
+    }
+
+    // ========== PRODUCT SEARCH ==========
+    function filterProducts() {
+        const query = document.getElementById('productSearch').value.toLowerCase().trim();
+        const cards = document.querySelectorAll('.product-card');
+        let visibleCount = 0;
+        cards.forEach(card => {
+            const name = card.dataset.name || '';
+            const code = card.dataset.code || '';
+            const match = name.includes(query) || code.includes(query);
+            card.style.display = match ? '' : 'none';
+            if (match) visibleCount++;
+        });
+        const emptyMsg = document.getElementById('noResultsMsg');
+        if (visibleCount === 0 && cards.length > 0) {
+            if (!emptyMsg) {
+                const grid = document.getElementById('productsGrid');
+                const msg = document.createElement('div');
+                msg.id = 'noResultsMsg';
+                msg.style.gridColumn = '1 / -1';
+                msg.innerHTML = `<div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <h3>No products found</h3>
+                    <p>Try adjusting your search terms</p>
+                </div>`;
+                grid.appendChild(msg);
+            }
+        } else if (emptyMsg) {
+            emptyMsg.remove();
+        }
+    }
+
+    // ========== EDIT PRODUCT ==========
+    async function editProduct(btn) {
+        const code = btn.dataset.code;
+        if (!code) {
+            alert('Product code not found');
+            return;
+        }
+
+        openModal('editProductModal');
+        const body = document.getElementById('editProductBody');
+        const footer = document.getElementById('editProductFooter');
+
+        // Show loading
+        body.innerHTML = `<div class="text-center" style="padding:20px;">
+            <i class="fas fa-spinner fa-spin" style="font-size:32px; color:var(--primary);"></i>
+            <p style="margin-top:12px; color:var(--text-secondary);">Loading product data...</p>
+        </div>`;
+        footer.style.display = 'none';
+
+        try {
+            const encoded = encodeURIComponent(code);
+            const response = await fetch(`/api/product/${encoded}`);
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);
+            }
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                throw new Error('Invalid JSON response from server');
+            }
+
+            if (data.success) {
+                const p = data.product;
+
+                // Build the form HTML
+                body.innerHTML = `
+                    <input type="hidden" name="code" value="${p.Code}">
+                    <div class="form-group">
+                        <label>Product Name <span class="required">*</span></label>
+                        <input type="text" class="form-control" name="Name" value="${p.Name}" required>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label>Selling Price (₹) <span class="required">*</span></label>
+                            <input type="number" class="form-control" name="Price" value="${p.Price}" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cost Price (₹)</label>
+                            <input type="number" class="form-control" name="CostPrice" value="${p.CostPrice || ''}" step="0.01">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label>Quantity <span class="required">*</span></label>
+                            <input type="number" class="form-control" name="Quantity" value="${p.Quantity}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Min Stock Level</label>
+                            <input type="number" class="form-control" name="MinStockLevel" value="${p.MinStockLevel || 5}">
+                        </div>
+                        <div class="form-group">
+                            <label>Size</label>
+                            <div style="display:flex; gap:8px;">
+                                <select class="form-control" name="Size" id="sizeSelectEdit" style="flex:2;" onchange="toggleCustomSize('edit')">
+                                    <option value="Normal">Normal</option>
+                                    <option value="S">Small</option>
+                                    <option value="M">Medium</option>
+                                    <option value="L">Large</option>
+                                    <option value="XL">XL</option>
+                                    <option value="XXL">XXL</option>
+                                    <option value="__custom__">✏️ Custom</option>
+                                </select>
+                                <input type="text" class="form-control" name="size_custom" id="sizeCustomEdit" placeholder="Custom size" style="flex:1; display:none;">
+                            </div>
+                            <small style="color:var(--text-light);">Select a size or choose "Custom" to enter your own.</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <input type="text" class="form-control" name="Category" value="${p.Category || ''}">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <p style="font-size: 12px; color: var(--text-light);">
+                            <i class="fas fa-info-circle"></i> Product Code: <strong>${p.Code}</strong>
+                            ${p.QRUrl ? ` | <a href="#" onclick="viewQR('${p.Code}'); return false;">View QR Code</a>` : ''}
+                        </p>
+                    </div>
+                `;
+
+                // Handle size select/custom
+                const size = p.Size || 'Normal';
+                const sizeSelect = document.getElementById('sizeSelectEdit');
+                const sizeCustom = document.getElementById('sizeCustomEdit');
+                let found = false;
+                for (let opt of sizeSelect.options) {
+                    if (opt.value === size) { found = true; break; }
+                }
+                if (found) {
+                    sizeSelect.value = size;
+                    sizeCustom.style.display = 'none';
+                    sizeCustom.value = '';
+                    sizeCustom.required = false;
+                } else {
+                    sizeSelect.value = '__custom__';
+                    sizeCustom.style.display = 'block';
+                    sizeCustom.value = size;
+                    sizeCustom.required = true;
+                }
+
+                document.getElementById('editProductForm').action = `/api/product/${encoded}/update`;
+                footer.style.display = 'flex';
+            } else {
+                body.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><h3>${data.message || 'Product not found'}</h3></div>`;
+                footer.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Edit product error:', error);
+            body.innerHTML = `<div class="empty-state">
+                <i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i>
+                <h3>Error loading product</h3>
+                <p style="font-size:13px;color:var(--text-light);">${error.message}</p>
+            </div>`;
+            footer.style.display = 'none';
+        }
+    }
+
+    // ========== EDIT PRODUCT - SUBMIT VIA FETCH ==========
+    document.getElementById('editProductForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        const code = data.code;
+        delete data.code; // code is in the URL, not in body
+    
+        // Handle custom size
+        if (data.size_custom && data.size_custom.trim()) {
+            data.Size = data.size_custom.trim();
+        }
+        delete data.size_custom;
+    
+        try {
+            const response = await fetch(this.action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert(result.message);
+                closeModal('editProductModal');
+                location.reload(); // refresh to show updated product
+            } else {
+                alert('❌ Error: ' + result.message);
+            }
+        } catch (err) {
+            alert('Network error: ' + err.message);
+        }
+    });
+
+    // ========== DELETE PRODUCT ==========
+    function deleteProduct(code, name) {
+        if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+        fetch(`/api/product/${encodeURIComponent(code)}/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to delete product');
+            }
+        })
+        .catch(error => {
+            alert('Error deleting product: ' + error.message);
+        });
+    }
+
+    // ========== VIEW QR CODE ==========
+    function viewQR(code) {
+        const img = document.getElementById('qrImage');
+        const text = document.getElementById('qrCodeText');
+        img.src = `/storage/qrcodes/${encodeURIComponent(code)}.png`;
+        text.textContent = `Product Code: ${code}`;
+        openModal('qrModal');
+    }
+
+    function downloadQR() {
+        const img = document.getElementById('qrImage');
+        const link = document.createElement('a');
+        link.download = img.src.split('/').pop();
+        link.href = img.src;
+        link.click();
+    }
+
+    // ========== MODAL HELPERS ==========
+    function openModal(id) {
+        document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+        // Reset custom size visibility when closing add modal
+        if (id === 'addProductModal') {
+            const customInput = document.getElementById('sizeCustomAdd');
+            if (customInput) {
+                customInput.style.display = 'none';
+                customInput.required = false;
+                customInput.value = '';
+            }
+            document.getElementById('sizeSelectAdd').value = 'Normal';
+        }
+    }
+
+    // ========== GLOBAL EXPOSURE ==========
+    window.filterProducts = filterProducts;
+    window.editProduct = editProduct;
+    window.deleteProduct = deleteProduct;
+    window.viewQR = viewQR;
+    window.downloadQR = downloadQR;
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.toggleCustomSize = toggleCustomSize;
+</script>
+{% endblock %}

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ shop_name }} - Shop Manager{% endblock %}</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Flash Messages -->
+    <div class="flash-messages" id="flashMessages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-store"></i>
+                <span>{{ shop_name }}</span>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('inventory') }}" class="nav-item {% if active_page == 'inventory' %}active{% endif %}">
+                <i class="fas fa-boxes"></i>
+                <span>Inventory</span>
+            </a>
+            <a href="{{ url_for('customers') }}" class="nav-item {% if active_page == 'customers' %}active{% endif %}">
+                <i class="fas fa-users"></i>
+                <span>Customers</span>
+            </a>
+            <a href="{{ url_for('sales_page') }}" class="nav-item {% if active_page == 'sales' %}active{% endif %}">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Sales</span>
+            </a>
+            <a href="{{ url_for('reports') }}" class="nav-item {% if active_page == 'reports' %}active{% endif %}">
+                <i class="fas fa-file-invoice"></i>
+                <span>Reports</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <span>{{ shop_owner }}</span>
+            </div>
+            <button class="logout-btn" title="Logout" onclick="if(confirm('Are you sure?')){alert('Logout functionality coming soon!')}">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" title="Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+            </div>
+            <div class="header-right">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search..." id="globalSearch" onkeyup="handleGlobalSearch(event)">
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" title="Notifications" onclick="alert('No new notifications')">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">0</span>
+                    </button>
+                    <div class="user-avatar">
+                        <img src="https://ui-avatars.com/api/?name={{ shop_owner|urlencode }}&background=6C63FF&color=fff&size=40" alt="{{ shop_owner }}">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- Footer -->
+        <footer style="margin-top: auto; padding: 20px 32px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: var(--radius-lg); text-align: center; font-size: 13px; color: var(--text-secondary);">
+            <p>
+                &copy; 2026 {{ shop_name }} &middot; 
+                <a href="{{ url_for('dashboard') }}" style="color: var(--primary); text-decoration: none; font-weight: 500;">Dashboard</a> &middot;
+                <a href="{{ url_for('inventory') }}" style="color: var(--text-secondary); text-decoration: none;">Inventory</a> &middot;
+                <a href="{{ url_for('customers') }}" style="color: var(--text-secondary); text-decoration: none;">Customers</a> &middot;
+                <a href="{{ url_for('sales_page') }}" style="color: var(--text-secondary); text-decoration: none;">Sales</a>
+                <a href="{{ url_for('reports') }}" style="color: var(--text-secondary); text-decoration: none;">Reports</a>
+            </p>
+            <p style="font-size: 12px; margin-top: 4px;">Managed by {{ shop_owner }}</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Auto-hide flash messages after 4 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                document.querySelectorAll('.flash-message').forEach(msg => {
+                    msg.style.opacity = '0';
+                    msg.style.transition = 'opacity 0.5s';
+                    setTimeout(() => msg.remove(), 500);
+                });
+            }, 4000);
+        });
+
+        // Sidebar Toggle
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        });
+
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('mobile-open');
+        });
+
+        // Close sidebar on mobile when clicking outside
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768) {
+                if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                    sidebar.classList.remove('mobile-open');
+                }
+            }
+        });
+
+        // Global search handler
+        function handleGlobalSearch(e) {
+            const query = e.target.value.toLowerCase().trim();
+            // Each page implements its own search logic
+            if (typeof window.handlePageSearch === 'function') {
+                window.handlePageSearch(query);
+            }
+        }
+
+        // Close modal on ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+            }
+        });
+
+        // Close modal on overlay click
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.closest('.modal').classList.remove('active');
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

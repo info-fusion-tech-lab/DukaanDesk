@@ -1,0 +1,68 @@
+import os
+import qrcode
+from PIL import Image, ImageDraw, ImageFont
+
+# Derive paths relative to the project root directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PRODUCT_QR_DIR = os.path.join(BASE_DIR, "storage", "ProductQRs")
+
+def generate_labeled_qrcode(product_code, save_filename=None):
+    """
+    Generates a clean QR code with the raw product code underneath
+    as a physical backup for manual entry when scanning fails.
+    """
+    os.makedirs(PRODUCT_QR_DIR, exist_ok=True)
+
+    # 1. Generate QR Code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=10,
+        border=2,  # Minimal quiet zone around the QR matrix
+    )
+    qr.add_data(product_code)
+    qr.make(fit=True)
+    
+    qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+    qr_width, qr_height = qr_img.size
+
+    # 2. Dimensions Layout
+    padding = 10
+    text_section_height = 40
+    
+    total_width = qr_width + (padding * 2)
+    total_height = qr_height + text_section_height + padding
+
+    # 3. Canvas Creation (Clean white background)
+    canvas = Image.new("RGB", (total_width, total_height), "white")
+    draw = ImageDraw.Draw(canvas)
+    
+    # Paste QR Code centered
+    canvas.paste(qr_img, (padding, padding))
+
+    # 4. Render Product Code Label (No borders or lines drawn)
+    try:
+        font = ImageFont.truetype("arial.ttf", size=16)
+    except IOError:
+        font = ImageFont.load_default()
+
+    # Calculate text position to center it right under the QR code
+    bbox = draw.textbbox((0, 0), product_code, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+    
+    text_x = (total_width - text_width) // 2
+    text_y = padding + qr_height + ((text_section_height - text_height) // 2) - 8
+
+    draw.text((text_x, text_y), product_code, fill="black", font=font)
+
+    # 5. Save image to storage/ProductQRs/
+    if not save_filename:
+        save_filename = f"{product_code}.png"
+    elif not save_filename.endswith(".png"):
+        save_filename += ".png"
+
+    file_path = os.path.join(PRODUCT_QR_DIR, save_filename)
+    canvas.save(file_path)
+    return file_path
+

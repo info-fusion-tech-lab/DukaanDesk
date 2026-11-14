@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ shop_name }}{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-box"></i></div>
+        <div class="stat-label">Total Products</div>
+        <div class="stat-value">{{ total_products|default(0) }}</div>
+        <div class="stat-change positive"><i class="fas fa-arrow-up"></i> In Stock</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-cubes"></i></div>
+        <div class="stat-label">Inventory Items</div>
+        <div class="stat-value">{{ total_inventory_items|default(0) }}</div>
+        <div class="stat-change positive"><i class="fas fa-arrow-up"></i> Total Quantity</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-label">Customers</div>
+        <div class="stat-value">{{ customers_count|default(0) }}</div>
+        <div class="stat-change positive"><i class="fas fa-arrow-up"></i> Registered</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+        <div class="stat-label">Total Sales</div>
+        <div class="stat-value">{{ total_sales_count|default(0) }}</div>
+        <div class="stat-change positive"><i class="fas fa-arrow-up"></i> Orders</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+        <div class="stat-label">Revenue</div>
+        <div class="stat-value">₹{{ "%.2f"|format(total_revenue|default(0)) }}</div>
+        <div class="stat-change positive"><i class="fas fa-arrow-up"></i> Total</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-hand-holding-usd"></i></div>
+        <div class="stat-label">Receivables</div>
+        <div class="stat-value">₹{{ "%.2f"|format(total_receivables|default(0)) }}</div>
+        <div class="stat-change negative"><i class="fas fa-arrow-up"></i> Pending</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-hand-holding-heart"></i></div>
+        <div class="stat-label">Payables</div>
+        <div class="stat-value">₹{{ "%.2f"|format(total_payable|default(0)) }}</div>
+        <div class="stat-change negative"><i class="fas fa-arrow-down"></i> Owed</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="stat-label">Low Stock</div>
+        <div class="stat-value">{{ low_stock_count|default(0) }}</div>
+        <div class="stat-change negative"><i class="fas fa-arrow-down"></i> Needs Attention</div>
+    </div>
+</div>
+
+<!-- Dashboard Grid -->
+<div class="dashboard-grid">
+    <!-- Recent Sales -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <h3><i class="fas fa-clock" style="color: var(--primary); margin-right: 8px;"></i>Recent Sales</h3>
+            <a href="{{ url_for('reports') }}" class="card-action">View All →</a>
+        </div>
+        <div class="card-body">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Payment</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if recent_sales %}
+                            {% for sale_id, sale in recent_sales %}
+                            <tr>
+                                <td><strong>#{{ sale_id[:8] }}</strong></td>
+                                <td>{{ sale.Items|length }} items</td>
+                                <td>₹{{ "%.2f"|format(sale.TotalAmount) }}</td>
+                                <td><span class="badge badge-primary">{{ sale.PaymentType|title }}</span></td>
+                                <td style="font-size:12px;">{{ sale.Timestamp }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align:center;padding:30px;color:var(--text-light);">
+                                    No sales recorded yet
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <h3><i class="fas fa-bolt" style="color: var(--warning); margin-right: 8px;"></i>Quick Actions</h3>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <a href="{{ url_for('inventory') }}" class="btn btn-primary" style="justify-content: center;">
+                    <i class="fas fa-plus-circle"></i> Add Product
+                </a>
+                <a href="{{ url_for('customers') }}" class="btn btn-success" style="justify-content: center;">
+                    <i class="fas fa-user-plus"></i> Add Customer
+                </a>
+                <a href="{{ url_for('sales_page') }}" class="btn btn-warning" style="justify-content: center;">
+                    <i class="fas fa-receipt"></i> New Sale
+                </a>
+                <a href="{{ url_for('reports') }}" class="btn" style="background: var(--info); color: white; justify-content: center;">
+                    <i class="fas fa-file-invoice"></i> View Reports
+                </a>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 20px 0;">
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-primary); border-radius: var(--radius-sm);">
+                    <i class="fas fa-circle" style="color: var(--success); font-size: 10px;"></i>
+                    <span style="font-size: 13px;">System is running smoothly</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-primary); border-radius: var(--radius-sm);">
+                    <i class="fas fa-circle" style="color: var(--info); font-size: 10px;"></i>
+                    <span style="font-size: 13px;">{{ customers_count|default(0) }} customers registered</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-primary); border-radius: var(--radius-sm);">
+                    <i class="fas fa-circle" style="color: var(--warning); font-size: 10px;"></i>
+                    <span style="font-size: 13px;">{{ total_products|default(0) }} products in inventory</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

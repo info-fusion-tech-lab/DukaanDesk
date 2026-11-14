@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}Customers - {{ shop_name }}{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-users" style="color: var(--primary); margin-right: 10px;"></i>Customer Management
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="flex-between flex-wrap" style="margin-bottom: 24px; gap: 12px;">
+    <p style="color: var(--text-secondary); font-size: 14px;">Manage your customer database and transactions</p>
+    <button class="btn btn-primary" onclick="openModal('addCustomerModal')">
+        <i class="fas fa-user-plus"></i> Add Customer
+    </button>
+</div>
+
+<!-- Customer Stats -->
+<div class="dashboard-stats" style="margin-bottom: 24px;">
+    <div class="stat-card" style="border-left: 4px solid var(--primary);">
+        <div class="stat-label">Total Customers</div>
+        <div class="stat-value">{{ customers|length if customers else 0 }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 4px solid var(--warning);">
+        <div class="stat-label">Total Receivables</div>
+        <div class="stat-value">₹{{ "%.2f"|format(customers.values()|sum(attribute='Balance') if customers else 0) }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 4px solid var(--success);">
+        <div class="stat-label">Active Customers</div>
+        <div class="stat-value">{{ customers.values()|selectattr('Balance', 'gt', 0)|list|length if customers else 0 }}</div>
+    </div>
+</div>
+
+<!-- Search -->
+<div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 200px;">
+        <input type="text" class="form-control" placeholder="🔍 Search customers by name or phone..." id="customerSearch" onkeyup="filterCustomers()">
+    </div>
+</div>
+
+<!-- Customer Table -->
+<div class="dashboard-card">
+    <div class="card-body">
+        <div class="table-container">
+            <table class="table" id="customerTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Balance</th>
+                        <th>Status</th>
+                        <th style="text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if customers and customers|length > 0 %}
+                        {% for phone, customer in customers.items() %}
+                        <tr data-name="{{ customer.Name|lower }}" data-phone="{{ phone }}">
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--primary-gradient); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; flex-shrink: 0;">
+                                        {{ customer.Name[0] if customer.Name else '?' }}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600;">{{ customer.Name }}</div>
+                                        <div style="font-size: 12px; color: var(--text-light);">
+                                            {{ customer.Transactions|length if customer.Transactions else 0 }} transactions
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ phone }}</td>
+                            <td style="font-weight: 600; {% if customer.Balance > 0 %}color: var(--danger);{% elif customer.Balance < 0 %}color: var(--success);{% endif %}">
+                                ₹{{ "%.2f"|format(customer.Balance|default(0)) }}
+                            </td>
+                            <td>
+                                {% if customer.Balance > 0 %}
+                                    <span class="badge badge-danger">Owes ₹{{ "%.2f"|format(customer.Balance) }}</span>
+                                {% elif customer.Balance < 0 %}
+                                    <span class="badge badge-success">Owed ₹{{ "%.2f"|format(customer.Balance|abs) }}</span>
+                                {% else %}
+                                    <span class="badge badge-info">Settled</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <button class="btn btn-sm btn-info" onclick="viewCustomer('{{ phone }}')" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="editCustomer('{{ phone }}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteCustomer('{{ phone }}', '{{ customer.Name }}')" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <i class="fas fa-users"></i>
+                                    <h3>No customers yet</h3>
+                                    <p>Start by adding your first customer</p>
+                                    <button class="btn btn-primary" onclick="openModal('addCustomerModal')">
+                                        <i class="fas fa-user-plus"></i> Add Customer
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ADD CUSTOMER MODAL ===== -->
+<div class="modal" id="addCustomerModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-plus" style="color: var(--primary); margin-right: 8px;"></i>Add New Customer</h3>
+            <button class="modal-close" onclick="closeModal('addCustomerModal')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('customers') }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Customer Name <span class="required">*</span></label>
+                    <input type="text" class="form-control" name="name" placeholder="Enter customer name" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Phone Number <span class="required">*</span></label>
+                    <input type="tel" class="form-control" name="phone" placeholder="Enter phone number" required>
+                    <p style="font-size: 12px; color: var(--text-light); margin-top: 6px;">
+                        <i class="fas fa-info-circle"></i> Phone number is used as unique identifier
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" style="background: var(--bg-primary); color: var(--text-secondary);" onclick="closeModal('addCustomerModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Customer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== VIEW CUSTOMER MODAL ===== -->
+<div class="modal" id="viewCustomerModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-user" style="color: var(--primary); margin-right: 8px;"></i>Customer Details</h3>
+            <button class="modal-close" onclick="closeModal('viewCustomerModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="viewCustomerBody">
+            <div class="text-center" style="padding: 20px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i>
+                <p style="margin-top: 12px; color: var(--text-secondary);">Loading customer data...</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn" style="background: var(--bg-primary); color: var(--text-secondary);" onclick="closeModal('viewCustomerModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== EDIT CUSTOMER MODAL ===== -->
+<div class="modal" id="editCustomerModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-edit" style="color: var(--primary); margin-right: 8px;"></i>Edit Customer</h3>
+            <button class="modal-close" onclick="closeModal('editCustomerModal')">&times;</button>
+        </div>
+        <form id="editCustomerForm" method="POST">
+            <div class="modal-body" id="editCustomerBody">
+                <div class="text-center" style="padding: 20px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--primary);"></i>
+                    <p style="margin-top: 12px; color: var(--text-secondary);">Loading customer data...</p>
+                </div>
+            </div>
+            <div class="modal-footer" id="editCustomerFooter" style="display: none;">
+                <button type="button" class="btn" style="background: var(--bg-primary); color: var(--text-secondary);" onclick="closeModal('editCustomerModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update Customer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== TRANSACTION MODAL ===== -->
+<div class="modal" id="transactionModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-exchange-alt" style="color: var(--primary); margin-right: 8px;"></i>Record Transaction</h3>
+            <button class="modal-close" onclick="closeModal('transactionModal')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('record_transaction') }}">
+            <div class="modal-body">
+                <input type="hidden" name="phone" id="txnPhone">
+                <div class="form-group">
+                    <label>Amount (₹) <span class="required">*</span></label>
+                    <input type="number" class="form-control" name="amount" placeholder="0.00" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Transaction Type <span class="required">*</span></label>
+                    <select class="form-control" name="txn_type" required>
+                        <option value="GAVE">GAVE (Customer bought on credit)</option>
+                        <option value="GOT">GOT (Customer made payment)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Note (Optional)</label>
+                    <input type="text" class="form-control" name="note" placeholder="e.g., Bought 2 shirts">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" style="background: var(--bg-primary); color: var(--text-secondary);" onclick="closeModal('transactionModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Record Transaction
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Search filter
+    function filterCustomers() {
+        const query = document.getElementById('customerSearch').value.toLowerCase().trim();
+        const rows = document.querySelectorAll('#customerTable tbody tr');
+        rows.forEach(row => {
+            const name = row.dataset.name || '';
+            const phone = row.dataset.phone || '';
+            const match = name.includes(query) || phone.includes(query);
+            row.style.display = match ? '' : 'none';
+        });
+    }
+
+    // View customer
+    async function viewCustomer(phone) {
+        openModal('viewCustomerModal');
+        const body = document.getElementById('viewCustomerBody');
+        
+        try {
+            const response = await fetch(`/api/customer/${encodeURIComponent(phone)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const c = data.customer;
+                let transactions = '';
+                if (c.Transactions && c.Transactions.length > 0) {
+                    transactions = c.Transactions.map(t => `
+                        <tr>
+                            <td style="font-size: 12px;">${t.Timestamp}</td>
+                            <td><span class="badge ${t.Type === 'GAVE' ? 'badge-danger' : 'badge-success'}">${t.Type}</span></td>
+                            <td>₹${t.Amount.toFixed(2)}</td>
+                            <td>₹${t.NewBalance.toFixed(2)}</td>
+                            <td style="font-size: 12px; color: var(--text-light);">${t.Note || '-'}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    transactions = `<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:20px;">No transactions yet</td></tr>`;
+                }
+                
+                body.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                        <div><strong>Name:</strong> ${c.Name}</div>
+                        <div><strong>Phone:</strong> ${c.Phone}</div>
+                        <div><strong>Balance:</strong> <span style="font-weight:700;${c.Balance > 0 ? 'color:var(--danger);' : c.Balance < 0 ? 'color:var(--success);' : ''}">₹${c.Balance.toFixed(2)}</span></div>
+                        <div><strong>Total Transactions:</strong> ${c.Transactions ? c.Transactions.length : 0}</div>
+                    </div>
+                    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 12px 0 16px;">
+                    <h4 style="margin-bottom: 12px; font-size: 14px;">Transaction History</h4>
+                    <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table" style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Balance</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody>${transactions}</tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 16px;">
+                        <button class="btn btn-sm btn-warning" onclick="openTransactionModal('${phone}')">
+                            <i class="fas fa-exchange-alt"></i> Record Transaction
+                        </button>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><h3>${data.message || 'Customer not found'}</h3></div>`;
+            }
+        } catch (error) {
+            body.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><h3>Error loading customer</h3></div>`;
+        }
+    }
+
+    // Edit customer
+    async function editCustomer(phone) {
+        openModal('editCustomerModal');
+        const body = document.getElementById('editCustomerBody');
+        const footer = document.getElementById('editCustomerFooter');
+        
+        try {
+            const response = await fetch(`/api/customer/${encodeURIComponent(phone)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const c = data.customer;
+                body.innerHTML = `
+                    <input type="hidden" name="phone" value="${c.Phone}">
+                    <div class="form-group">
+                        <label>Customer Name <span class="required">*</span></label>
+                        <input type="text" class="form-control" name="name" value="${c.Name}" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Phone Number <span class="required">*</span></label>
+                        <input type="tel" class="form-control" name="phone" value="${c.Phone}" required>
+                        <p style="font-size: 12px; color: var(--text-light); margin-top: 6px;">
+                            <i class="fas fa-info-circle"></i> Changing phone will update the customer's identifier
+                        </p>
+                    </div>
+                `;
+                document.getElementById('editCustomerForm').action = `/api/customer/${encodeURIComponent(phone)}/update`;
+                footer.style.display = 'flex';
+            } else {
+                body.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><h3>${data.message || 'Customer not found'}</h3></div>`;
+                footer.style.display = 'none';
+            }
+        } catch (error) {
+            body.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><h3>Error loading customer</h3></div>`;
+            footer.style.display = 'none';
+        }
+    }
+
+    // Delete customer
+    function deleteCustomer(phone, name) {
+        if (!confirm(`Are you sure you want to delete "${name}"? This will remove all their data.`)) return;
+        
+        fetch(`/api/customer/${encodeURIComponent(phone)}/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to delete customer');
+            }
+        })
+        .catch(error => {
+            alert('Error deleting customer: ' + error.message);
+        });
+    }
+
+    // Open transaction modal
+    function openTransactionModal(phone) {
+        document.getElementById('txnPhone').value = phone;
+        closeModal('viewCustomerModal');
+        openModal('transactionModal');
+    }
+
+    // Modal functions
+    function openModal(id) {
+        document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+
+    // Make functions globally accessible
+    window.filterCustomers = filterCustomers;
+    window.viewCustomer = viewCustomer;
+    window.editCustomer = editCustomer;
+    window.deleteCustomer = deleteCustomer;
+    window.openTransactionModal = openTransactionModal;
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+</script>
+{% endblock %}

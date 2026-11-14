@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}Sales - {{ shop_name }}{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-shopping-cart" style="color: var(--primary); margin-right: 10px;"></i>Sales
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cart-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-total {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--primary);
+        text-align: right;
+        padding: 12px 0;
+        border-top: 2px solid var(--border-color);
+        margin-top: 12px;
+    }
+    .payment-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+        gap: 10px;
+        margin: 16px 0;
+    }
+    .payment-options label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: var(--transition);
+        font-weight: 500;
+    }
+    .payment-options label:hover,
+    .payment-options input:checked + label {
+        border-color: var(--primary);
+        background: rgba(108,99,255,0.05);
+    }
+    .split-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        margin-top: 12px;
+        padding: 16px;
+        background: var(--bg-primary);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+    }
+    .split-fields .form-group { margin-bottom: 0; }
+    .product-select-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .product-select-wrapper input[type="text"] { flex: 2; min-width: 150px; }
+    .product-select-wrapper input[type="number"] { width: 80px; }
+    .product-select-wrapper button { flex-shrink: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-card">
+    <div class="card-header">
+        <h3><i class="fas fa-layer-group" style="color: var(--primary);"></i> Bulk Sale – Add Multiple Items</h3>
+    </div>
+    <div class="card-body">
+        <!-- Add product to cart -->
+        <div class="product-select-wrapper" style="margin-bottom: 16px;">
+            <input type="text" class="form-control" id="bulkProductInput" list="bulkProductList" placeholder="Search product..." autocomplete="off" style="flex:2; min-width:150px;">
+            <datalist id="bulkProductList">
+                {% for code, p in products.items() %}
+                <option value="{{ p.Name }} ({{ code }})" data-code="{{ code }}" data-price="{{ p.Price }}" data-stock="{{ p.Quantity }}">
+                {% endfor %}
+            </datalist>
+            <input type="hidden" id="bulkProductCode">
+            <input type="number" class="form-control" id="bulkQty" value="1" min="1" style="width:80px;">
+            <input type="number" class="form-control" id="bulkPrice" step="0.01" placeholder="Price" style="width:120px;">
+            <button class="btn btn-primary" onclick="addToCart()"><i class="fas fa-plus"></i> Add</button>
+        </div>
+        <div id="bulkStockWarning" style="color: var(--danger); font-size:13px; margin-bottom:12px;"></div>
+
+        <!-- Cart -->
+        <div id="bulkCart">
+            <div style="display: flex; justify-content: space-between; font-weight: 600; padding: 8px 0; border-bottom: 2px solid var(--border-color);">
+                <span>Product</span>
+                <span>Qty</span>
+                <span>Price</span>
+                <span>Total</span>
+                <span>Action</span>
+            </div>
+            <div id="bulkCartItems"></div>
+            <div class="cart-total" id="bulkCartTotal">Total: ₹0.00</div>
+        </div>
+
+        <hr style="margin: 24px 0; border: none; border-top: 2px dashed var(--border-color);">
+
+        <!-- Customer -->
+        <div class="form-group">
+            <label>Customer <span class="required" id="customerRequiredBulk" style="display:none;">*</span></label>
+            <input type="text" class="form-control" id="bulkCustomerInput" list="bulkCustomerList" placeholder="Search customer..." autocomplete="off">
+            <datalist id="bulkCustomerList">
+                <option value="Walk-in Customer" data-phone=""></option>
+                {% for phone, c in customers.items() %}
+                <option value="{{ c.Name }} ({{ phone }})" data-phone="{{ phone }}">
+                {% endfor %}
+            </datalist>
+            <input type="hidden" id="bulkCustomerPhone">
+        </div>
+
+        <div class="form-group">
+            <label>Payment Type <span class="required">*</span></label>
+            <div class="payment-options" id="bulkPaymentOptions">
+                <input type="radio" name="bulkPayment" value="cash" id="bulkCash" checked>
+                <label for="bulkCash"><i class="fas fa-money-bill-wave"></i> Cash</label>
+                <input type="radio" name="bulkPayment" value="online" id="bulkOnline">
+                <label for="bulkOnline"><i class="fas fa-mobile-alt"></i> Online</label>
+                <input type="radio" name="bulkPayment" value="udhari" id="bulkUdhari">
+                <label for="bulkUdhari"><i class="fas fa-hand-holding-usd"></i> Udhari</label>
+                <input type="radio" name="bulkPayment" value="split" id="bulkSplit">
+                <label for="bulkSplit"><i class="fas fa-divide"></i> Split</label>
+            </div>
+        </div>
+
+        <div id="bulkSplitFields" style="display:none;">
+            <div class="split-fields">
+                <div class="form-group">
+                    <label>Cash (₹)</label>
+                    <input type="number" class="form-control" id="bulkSplitCash" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Online (₹)</label>
+                    <input type="number" class="form-control" id="bulkSplitOnline" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Udhari (₹)</label>
+                    <input type="number" class="form-control" id="bulkSplitUdhari" step="0.01" value="0">
+                </div>
+            </div>
+            <div id="bulkSplitError" style="color: var(--danger); font-size:13px; margin-top:8px;"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Note (optional)</label>
+            <input type="text" class="form-control" id="bulkNote" placeholder="Add a note">
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap:12px; justify-content:flex-end;">
+            <button class="btn" style="background: var(--bg-primary); color: var(--text-secondary);" onclick="clearCart()">Clear Cart</button>
+            <button class="btn btn-success" onclick="submitBulkSale()">
+                <i class="fas fa-check-circle"></i> Complete Bulk Sale
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Helper: Get selected option from datalist
+    function getSelectedOption(inputId, listId) {
+        const input = document.getElementById(inputId);
+        const val = input.value.trim();
+        const list = document.getElementById(listId);
+        for (let opt of list.options) {
+            if (opt.value === val) {
+                return opt;
+            }
+        }
+        // Try partial match
+        for (let opt of list.options) {
+            if (opt.value.toLowerCase().includes(val.toLowerCase())) {
+                return opt;
+            }
+        }
+        return null;
+    }
+
+    // Bulk product input - store code
+    document.getElementById('bulkProductInput').addEventListener('input', function() {
+        const opt = getSelectedOption('bulkProductInput', 'bulkProductList');
+        document.getElementById('bulkProductCode').value = opt ? opt.dataset.code : '';
+        if (opt && !document.getElementById('bulkPrice').value) {
+            document.getElementById('bulkPrice').value = opt.dataset.price;
+        }
+        // Stock warning
+        const stock = opt ? parseInt(opt.dataset.stock) || 0 : 0;
+        const qty = parseInt(document.getElementById('bulkQty').value) || 1;
+        const warn = document.getElementById('bulkStockWarning');
+        if (opt && qty > stock) {
+            warn.textContent = `⚠️ Only ${stock} items available.`;
+        } else {
+            warn.textContent = '';
+        }
+    });
+
+    document.getElementById('bulkQty').addEventListener('input', function() {
+        const opt = getSelectedOption('bulkProductInput', 'bulkProductList');
+        const stock = opt ? parseInt(opt.dataset.stock) || 0 : 0;
+        const qty = parseInt(this.value) || 1;
+        const warn = document.getElementById('bulkStockWarning');
+        if (opt && qty > stock) {
+            warn.textContent = `⚠️ Only ${stock} items available.`;
+        } else {
+            warn.textContent = '';
+        }
+    });
+
+    let cart = [];
+
+    function addToCart() {
+        const code = document.getElementById('bulkProductCode').value;
+        if (!code) { alert('Select a product'); return; }
+        const opt = getSelectedOption('bulkProductInput', 'bulkProductList');
+        if (!opt) { alert('Product not found'); return; }
+        const name = opt.value.split(' (')[0];
+        const stock = parseInt(opt.dataset.stock) || 0;
+        const qty = parseInt(document.getElementById('bulkQty').value) || 1;
+        if (qty < 1) { alert('Quantity must be at least 1'); return; }
+        if (qty > stock) { alert(`Only ${stock} items available`); return; }
+        let price = parseFloat(document.getElementById('bulkPrice').value);
+        if (isNaN(price) || price <= 0) {
+            price = parseFloat(opt.dataset.price) || 0;
+        }
+        const existing = cart.find(item => item.code === code);
+        if (existing) {
+            existing.qty += qty;
+            existing.price = price;
+        } else {
+            cart.push({ code, name, qty, price });
+        }
+        renderCart();
+        document.getElementById('bulkQty').value = 1;
+        document.getElementById('bulkPrice').value = '';
+        document.getElementById('bulkProductInput').value = '';
+        document.getElementById('bulkProductCode').value = '';
+        document.getElementById('bulkStockWarning').textContent = '';
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+    }
+
+    function renderCart() {
+        const container = document.getElementById('bulkCartItems');
+        if (cart.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-light); padding: 16px 0;">No items in cart.</p>';
+            document.getElementById('bulkCartTotal').textContent = 'Total: ₹0.00';
+            return;
+        }
+        let html = '';
+        let total = 0;
+        cart.forEach((item, idx) => {
+            const lineTotal = item.qty * item.price;
+            total += lineTotal;
+            html += `
+                <div class="cart-item">
+                    <span><strong>${item.name}</strong> (${item.code})</span>
+                    <span>${item.qty} × ₹${item.price.toFixed(2)}</span>
+                    <span>₹${lineTotal.toFixed(2)}</span>
+                    <button class="btn btn-sm btn-danger" onclick="removeFromCart(${idx})"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        document.getElementById('bulkCartTotal').textContent = `Total: ₹${total.toFixed(2)}`;
+    }
+
+    function clearCart() {
+        cart = [];
+        renderCart();
+    }
+
+    // Bulk customer input - store phone
+    document.getElementById('bulkCustomerInput').addEventListener('input', function() {
+        const opt = getSelectedOption('bulkCustomerInput', 'bulkCustomerList');
+        document.getElementById('bulkCustomerPhone').value = opt ? opt.dataset.phone : '';
+    });
+
+    // Payment toggle for bulk
+    const bulkPaymentRadios = document.querySelectorAll('input[name="bulkPayment"]');
+    const bulkSplitFields = document.getElementById('bulkSplitFields');
+    const customerRequiredBulk = document.getElementById('customerRequiredBulk');
+
+    bulkPaymentRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'split') {
+                bulkSplitFields.style.display = 'block';
+            } else {
+                bulkSplitFields.style.display = 'none';
+            }
+            const isUdhari = this.value === 'udhari' || (this.value === 'split' && document.getElementById('bulkSplitUdhari').value > 0);
+            customerRequiredBulk.style.display = isUdhari ? 'inline' : 'none';
+            document.getElementById('bulkCustomerInput').required = isUdhari;
+        });
+    });
+
+    function validateBulkSplit() {
+        const cash = parseFloat(document.getElementById('bulkSplitCash').value) || 0;
+        const online = parseFloat(document.getElementById('bulkSplitOnline').value) || 0;
+        const udhari = parseFloat(document.getElementById('bulkSplitUdhari').value) || 0;
+        const total = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+        const sum = cash + online + udhari;
+        const error = document.getElementById('bulkSplitError');
+        if (Math.abs(sum - total) > 0.01) {
+            error.textContent = `⚠️ Split sum (₹${sum.toFixed(2)}) must equal total (₹${total.toFixed(2)})`;
+            return false;
+        } else {
+            error.textContent = '';
+            return true;
+        }
+    }
+    document.querySelectorAll('#bulkSplitFields input').forEach(inp => {
+        inp.addEventListener('input', validateBulkSplit);
+    });
+
+    async function submitBulkSale() {
+        if (cart.length === 0) { alert('Add at least one item to the cart'); return; }
+
+        const customerPhone = document.getElementById('bulkCustomerPhone').value;
+        const paymentType = document.querySelector('input[name="bulkPayment"]:checked').value;
+        const note = document.getElementById('bulkNote').value;
+
+        const items = cart.map(item => ({
+            ProductCode: item.code,
+            Quantity: item.qty,
+            SellingPrice: item.price
+        }));
+
+        const payload = {
+            items: items,
+            payment_type: paymentType,
+            customer_phone: customerPhone || null,
+            note: note
+        };
+
+        if (paymentType === 'split') {
+            const cash = parseFloat(document.getElementById('bulkSplitCash').value) || 0;
+            const online = parseFloat(document.getElementById('bulkSplitOnline').value) || 0;
+            const udhari = parseFloat(document.getElementById('bulkSplitUdhari').value) || 0;
+            payload.payment_split = { cash, online, udhari };
+            if (!validateBulkSplit()) return;
+            if (udhari > 0 && !customerPhone) {
+                alert('Udhari portion requires a customer');
+                return;
+            }
+        } else if (paymentType === 'udhari' && !customerPhone) {
+            alert('Udhari sale requires selecting a customer');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/sales', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert(`✅ Bulk sale recorded! ID: ${data.sale_id}\nTotal: ₹${data.total_amount.toFixed(2)}`);
+                if (data.low_stock_warnings && data.low_stock_warnings.length) {
+                    alert('⚠️ Warnings:\n' + data.low_stock_warnings.join('\n'));
+                }
+                location.reload();
+            } else {
+                alert('❌ Error: ' + data.message);
+            }
+        } catch (err) {
+            alert('Network error: ' + err.message);
+        }
+    }
+
+    // Make functions global
+    window.addToCart = addToCart;
+    window.removeFromCart = removeFromCart;
+    window.clearCart = clearCart;
+    window.submitBulkSale = submitBulkSale;
+</script>
+{% endblock %}
