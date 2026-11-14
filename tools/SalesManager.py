@@ -1,29 +1,19 @@
-import os
-import json
 import uuid
 from datetime import datetime
 
 import tools.StorageManager as storage
 import tools.CustomerManager as customer_manager
-from tools.paths import STORAGE_PATH
-
-SALES_FILE = os.path.join(STORAGE_PATH, "SalesLog.json")
+from tools.encrypted_json import load_json, save_json
+from tools.paths import storage_file
 
 VALID_PAYMENT_TYPES = ["cash", "online", "udhari", "split"]
 
 def load_sales():
-    if not os.path.exists(SALES_FILE) or os.path.getsize(SALES_FILE) == 0:
-        return {}
-    with open(SALES_FILE, 'r') as file:
-        try:
-            return json.load(file)
-        except json.JSONDecodeError:
-            return {}
+    return load_json(storage_file("SalesLog.json"), {})
 
 
 def save_sales(data):
-    with open(SALES_FILE, 'w') as file:
-        json.dump(data, file, indent=4)
+    save_json(storage_file("SalesLog.json"), data)
 
 
 def record_sale(items, payment_type, payment_split=None, customer_phone=None, note=""):

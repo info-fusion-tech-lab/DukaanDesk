@@ -41,6 +41,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements-build.txt
 
+      - name: Generate desktop icons
+        run: python scripts/generate_app_icons.py
+
       - name: Package local Python service
         run: python scripts/build_backend.py
 

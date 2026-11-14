@@ -30,7 +30,7 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <i class="fas fa-store"></i>
+                <img src="{{ url_for('favicon') }}" alt="">
                 <span>{{ shop_name }}</span>
             </div>
             <button class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar">
@@ -58,15 +58,27 @@
                 <i class="fas fa-file-invoice"></i>
                 <span>Reports</span>
             </a>
+            <a href="{{ url_for('account_settings') }}" class="nav-item">
+                <i class="fas fa-user-cog"></i>
+                <span>Account settings</span>
+            </a>
+            {% if is_shop_owner %}
+            <a href="{{ url_for('manage_accounts') }}" class="nav-item">
+                <i class="fas fa-user-plus"></i>
+                <span>Manage accounts</span>
+            </a>
+            {% endif %}
         </nav>
         <div class="sidebar-footer">
             <div class="user-info">
                 <i class="fas fa-user-circle"></i>
                 <span>{{ shop_owner }}</span>
             </div>
-            <button class="logout-btn" title="Logout" onclick="if(confirm('Are you sure?')){alert('Logout functionality coming soon!')}">
-                <i class="fas fa-sign-out-alt"></i>
-            </button>
+            <form action="{{ url_for('logout') }}" method="post">
+                <button class="logout-btn" title="Logout" aria-label="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -91,7 +103,7 @@
                         <span class="badge">0</span>
                     </button>
                     <div class="user-avatar">
-                        <img src="https://ui-avatars.com/api/?name={{ shop_owner|urlencode }}&background=6C63FF&color=fff&size=40" alt="{{ shop_owner }}">
+                        <img src="{{ url_for('favicon') }}" alt="{{ shop_name }}">
                     </div>
                 </div>
             </div>

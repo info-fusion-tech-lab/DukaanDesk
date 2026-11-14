@@ -146,6 +146,12 @@ body {
     padding: 8px;
     border-radius: var(--radius-sm);
 }
+.logo img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+}
 
 .sidebar-toggle {
     background: none;

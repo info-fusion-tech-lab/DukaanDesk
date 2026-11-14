@@ -1,16 +1,17 @@
 import os
 import qrcode
+from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
-from tools.paths import STORAGE_PATH
-
-PRODUCT_QR_DIR = os.path.join(STORAGE_PATH, "ProductQRs")
+from tools.encrypted_json import save_bytes
+from tools.paths import get_storage_path
 
 def generate_labeled_qrcode(product_code, save_filename=None):
     """
     Generates a clean QR code with the raw product code underneath
     as a physical backup for manual entry when scanning fails.
     """
-    os.makedirs(PRODUCT_QR_DIR, exist_ok=True)
+    product_qr_dir = os.path.join(get_storage_path(), "ProductQRs")
+    os.makedirs(product_qr_dir, exist_ok=True)
 
     # 1. Generate QR Code
     qr = qrcode.QRCode(
@@ -61,7 +62,9 @@ def generate_labeled_qrcode(product_code, save_filename=None):
     elif not save_filename.endswith(".png"):
         save_filename += ".png"
 
-    file_path = os.path.join(PRODUCT_QR_DIR, save_filename)
-    canvas.save(file_path)
+    file_path = os.path.join(product_qr_dir, save_filename)
+    image_buffer = BytesIO()
+    canvas.save(image_buffer, format="PNG")
+    save_bytes(file_path, image_buffer.getvalue())
     return file_path
 

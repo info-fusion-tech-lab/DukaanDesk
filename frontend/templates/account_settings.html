@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Account settings - {{ shop_name }}{% endblock %}
+{% block page_title %}Account settings{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">{% endblock %}
+
+{% block content %}
+<section class="dashboard-card" style="padding: 24px;">
+    <h2>{{ account.username }}</h2>
+    <p>Update your shop name or app password. This does not change your Windows account password.</p>
+    <form class="auth-form" method="post">
+        <label>Shop name
+            <input name="shop_name" maxlength="80" value="{{ account.shop_name }}" required>
+        </label>
+        {% if account.password_hash %}
+        <label>Current app password
+            <input name="current_password" type="password" autocomplete="current-password" required>
+        </label>
+        {% endif %}
+        <label>New app password
+            <input name="new_password" type="password" minlength="8" autocomplete="new-password">
+        </label>
+        <label>Confirm new password
+            <input name="confirm_password" type="password" minlength="8" autocomplete="new-password">
+        </label>
+        <p class="auth-help">Leave both new-password fields blank to keep your current setting.</p>
+        {% if account.password_hash %}
+        <label><span><input type="checkbox" name="remove_password" style="width:auto;min-height:auto"> Remove app password</span></label>
+        {% endif %}
+        <button class="btn btn-primary" type="submit">Save settings</button>
+    </form>
+</section>
+{% endblock %}

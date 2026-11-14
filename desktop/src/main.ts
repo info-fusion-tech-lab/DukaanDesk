@@ -1,5 +1,13 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
+import { randomBytes } from "node:crypto";
 import net from "node:net";
 import path from "node:path";
 import {
@@ -7,15 +15,31 @@ import {
   BrowserWindow,
   dialog,
   Menu,
+  safeStorage,
   shell,
 } from "electron";
 
 const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
 app.setName("Shop Management System");
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    const [window] = BrowserWindow.getAllWindows();
+    if (window) {
+      if (window.isMinimized()) {
+        window.restore();
+      }
+      window.focus();
+    }
+  });
+}
 
-const DATA_DIRECTORY = path.join(
-  app.isPackaged ? app.getPath("userData") : PROJECT_ROOT,
-  "storage",
+const DATA_DIRECTORY = path.join(app.getPath("userData"), "storage");
+const ENCRYPTION_KEY_FILE = path.join(
+  app.getPath("userData"),
+  "encryption-key.dat",
 );
 
 let backend: ChildProcess | undefined;
@@ -24,12 +48,9 @@ let isQuitting = false;
 let startupError: Error | undefined;
 
 function prepareDataDirectory(): void {
-  if (!app.isPackaged) {
-    mkdirSync(DATA_DIRECTORY, { recursive: true });
-    return;
-  }
-
-  const legacyDirectory = path.join(path.dirname(app.getPath("exe")), "storage");
+  const legacyDirectory = app.isPackaged
+    ? path.join(path.dirname(app.getPath("exe")), "storage")
+    : path.join(PROJECT_ROOT, "storage");
   if (
     existsSync(legacyDirectory)
     && (!existsSync(DATA_DIRECTORY) || readdirSync(DATA_DIRECTORY).length === 0)
@@ -39,6 +60,56 @@ function prepareDataDirectory(): void {
   } else {
     mkdirSync(DATA_DIRECTORY, { recursive: true });
   }
+}
+
+function getEncryptionKey(): string {
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error("Secure operating-system storage is unavailable.");
+  }
+  if (
+    process.platform === "linux"
+    && safeStorage.getSelectedStorageBackend() === "basic_text"
+  ) {
+    throw new Error(
+      "Configure a Linux desktop keyring (Secret Service or KWallet) to encrypt shop data.",
+    );
+  }
+
+  if (existsSync(ENCRYPTION_KEY_FILE)) {
+    try {
+      const key = safeStorage.decryptString(readFileSync(ENCRYPTION_KEY_FILE));
+      if (!/^[A-Za-z0-9_-]{43}=$/.test(key)) {
+        throw new Error("The stored encryption key has an invalid format.");
+      }
+      return key;
+    } catch (error) {
+      throw new Error(
+        `Could not unlock the local encryption key: ${String(error)}`,
+      );
+    }
+  }
+
+  const profileDirectory = path.join(DATA_DIRECTORY, "Profiles");
+  if (
+    existsSync(path.join(DATA_DIRECTORY, "Accounts.json"))
+    || (existsSync(profileDirectory) && readdirSync(profileDirectory).length > 0)
+  ) {
+    throw new Error(
+      "The encryption key is missing while encrypted shop data exists. Restore the original key from backup.",
+    );
+  }
+
+  const key = randomBytes(32)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+  mkdirSync(path.dirname(ENCRYPTION_KEY_FILE), { recursive: true });
+  writeFileSync(
+    ENCRYPTION_KEY_FILE,
+    safeStorage.encryptString(key),
+    { mode: 0o600 },
+  );
+  return key;
 }
 
 function getAvailablePort(): Promise<number> {
@@ -64,11 +135,12 @@ function getAvailablePort(): Promise<number> {
   });
 }
 
-function startBackend(port: number): ChildProcess {
+function startBackend(port: number, encryptionKey: string): ChildProcess {
   const environment = {
     ...process.env,
     SHOPMANAGER_DATA_DIR: DATA_DIRECTORY,
     SHOPMANAGER_DESKTOP: "1",
+    SHOPMANAGER_ENCRYPTION_KEY: encryptionKey,
     SHOPMANAGER_HOST: "127.0.0.1",
     SHOPMANAGER_PORT: String(port),
     SHOPMANAGER_DEBUG: "0",
@@ -192,12 +264,16 @@ function installApplicationMenu(): void {
 }
 
 function createWindow(url: string): void {
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, "app-icon.ico")
+    : path.join(PROJECT_ROOT, "store.ico");
   const window = new BrowserWindow({
     width: 1440,
     height: 960,
     minWidth: 960,
     minHeight: 640,
     title: "Shop Management System",
+    icon: iconPath,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -213,22 +289,25 @@ app.on("before-quit", () => {
   backend?.kill();
 });
 
-app.whenReady().then(async () => {
-  try {
-    prepareDataDirectory();
-    installApplicationMenu();
-    const port = await getAvailablePort();
-    const url = `http://127.0.0.1:${port}`;
-    const processHandle = startBackend(port);
-    await waitForBackend(url, processHandle);
-    backendUrl = url;
-    createWindow(url);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    dialog.showErrorBox("Could not start Shop Management System", message);
-    app.quit();
-  }
-});
+if (hasSingleInstanceLock) {
+  app.whenReady().then(async () => {
+    try {
+      prepareDataDirectory();
+      installApplicationMenu();
+      const encryptionKey = getEncryptionKey();
+      const port = await getAvailablePort();
+      const url = `http://127.0.0.1:${port}`;
+      const processHandle = startBackend(port, encryptionKey);
+      await waitForBackend(url, processHandle);
+      backendUrl = url;
+      createWindow(url);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      dialog.showErrorBox("Could not start Shop Management System", message);
+      app.quit();
+    }
+  });
+}
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0 && backendUrl) {

@@ -32,7 +32,7 @@ and release downloads.
 |-------|------------|
 | Backend | Python 3.x + Flask |
 | Frontend | HTML5, CSS3, JavaScript (vanilla) |
-| Storage | JSON files (no database required) |
+| Storage | Separate encrypted JSON files for each local account |
 | QR Codes | `qrcode` + `Pillow` (Python) |
 | Desktop application | Electron + TypeScript |
 | Product website | Next.js, deployed on Vercel |
@@ -105,13 +105,19 @@ python app.py
 ```
 
 The development server opens at `http://127.0.0.1:5000`. By default, source
-development continues to use the project `storage/` directory.
+development continues to use the project `storage/` directory. Direct Flask
+development does not have Electron's operating-system-protected encryption key;
+use the desktop app for encrypted local records.
 
 ## Desktop application
 
 The Electron shell starts the local Flask service, opens the existing interface
 in a desktop window and stops the service when the app exits. The packaged
 application binds only to `127.0.0.1` and runs without Flask debug mode.
+On first launch, set the shop name and create an owner account. Additional
+accounts are created by the owner and each account has a separate data folder.
+The login screen lists the local accounts; passwordless sign-in is optional.
+The existing `store.ico` is used for the installed app, shortcuts and shop logo.
 
 ### Develop the desktop app
 
@@ -125,16 +131,18 @@ application binds only to `127.0.0.1` and runs without Flask debug mode.
    ```bash
    npm run dev
    ```
-   The desktop development mode uses the repository's existing `storage/`
-   directory. Set `SHOPMANAGER_PYTHON` if your Python executable is not on PATH.
+   The desktop app uses its per-user application-data directory in development
+   and in packaged builds. It can import an existing repository `storage/`
+   folder on first launch. Set `SHOPMANAGER_PYTHON` if Python is not on PATH.
 
 ### Build a local installer
 
 From the repository root, install `requirements-build.txt` in the active Python
-environment, then run:
+environment, generate the platform icon assets, and then run:
 
 ```bash
 python scripts/build_backend.py
+python scripts/generate_app_icons.py
 cd desktop
 npm ci
 npm run dist
@@ -147,15 +155,26 @@ version tag such as `v1.0.0` is pushed.
 
 ### Local data and backups
 
-Packaged releases store JSON records and generated QR images in the Electron
-user-data directory, not beside the installed program. Use **File → Open Data
-Folder** in the app to access it. The product website does not receive shop
+Packaged releases store each account's JSON records and generated QR images in
+the Electron user-data directory, not beside the installed program. Account
+and business JSON files and QR images are encrypted at rest; the encryption
+key is protected by the operating system's secure storage. Linux requires a
+Secret Service or KWallet keyring. Use **File → Open Data Folder** in the app
+to access the encrypted data. The product website does not receive shop
 records.
 
-The first packaged launch can import an existing `storage/` folder placed next
-to the installed executable. Back up the old folder before migrating. For
-regular use, close the app before copying the data folder to a separate backup
-location. Keep backups private because they may contain customer information.
+Passwordless accounts are convenient, not a privacy boundary: anyone using the
+same operating-system account can open them. App accounts have separate
+profiles, but the local encryption key is shared by the app on that computer.
+Do not treat this as protection from another person who can access that same
+computer account. Backups can be restored on the same computer/user profile;
+moving encrypted data to a new computer requires an export/transfer feature.
+
+The first launch can import an existing `storage/` folder from beside the
+installed executable (or the repository when running the Electron development
+app). Back up the old folder before migrating. For regular use, close the app
+before copying the encrypted data folder to a separate backup location. Keep
+backups private because they may contain customer information.
 
 ## Product website
 

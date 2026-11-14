@@ -1,18 +1,38 @@
 import sys
 import os
 import secrets
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
+from io import BytesIO
+from flask import (
+    Flask,
+    abort,
+    flash,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    send_from_directory,
+    session,
+    url_for,
+)
 
 APP_ROOT = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from tools.GenerateCode import CodeGenerator
 from tools.GenerateQR import generate_labeled_qrcode
+from tools import accounts
+from tools.encrypted_json import load_bytes
 import tools.StorageManager as storage
 import tools.CustomerManager as customer_manager
 import tools.SalesManager as sales_manager
-
-QR_DIR = os.path.join(storage.STORAGE_PATH, "ProductQRs")
+from tools.paths import (
+    get_storage_path,
+    reset_profile_storage_path,
+    set_profile_storage_path,
+)
+from werkzeug.utils import safe_join
 
 app = Flask(
     __name__,
@@ -20,22 +40,185 @@ app = Flask(
     static_folder=os.path.join(APP_ROOT, "frontend", "static"),
 )
 app.secret_key = os.environ.get("SHOPMANAGER_SECRET_KEY") or secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
 
 code_gen = CodeGenerator()
 
-# Context processor to inject shop details globally across templates
+
+@app.before_request
+def require_local_account():
+    public_endpoints = {
+        "setup",
+        "login",
+        "login_account",
+        "health",
+        "favicon",
+        "static",
+    }
+    if request.endpoint in public_endpoints:
+        return None
+
+    account_list = accounts.list_accounts()
+    if not account_list:
+        return redirect(url_for("setup"))
+    if request.endpoint == "setup":
+        return redirect(url_for("login"))
+
+    account_id = session.get("account_id")
+    if not account_id:
+        return redirect(url_for("login"))
+
+    account = accounts.get_account(account_id)
+    if not account:
+        session.clear()
+        return redirect(url_for("login"))
+
+    g.storage_path_token = set_profile_storage_path(
+        accounts.profile_directory(account_id)
+    )
+    return None
+
+
+@app.teardown_request
+def reset_request_storage_path(error=None):
+    token = getattr(g, "storage_path_token", None)
+    if token is not None:
+        reset_profile_storage_path(token)
+
+
 @app.context_processor
 def inject_shop_info():
+    account_id = session.get("account_id")
+    account = accounts.get_account(account_id) if account_id else None
     return {
-        'shop_name': 'New Fashion House',
-        'shop_owner': 'Basanta Sa'
+        "shop_name": account["shop_name"] if account else "Shop Management System",
+        "shop_owner": account["username"] if account else "",
+        "is_shop_owner": bool(account and account.get("is_owner")),
     }
 
-# ---------- LANDING PAGE ----------
-@app.route('/')
+
+@app.route("/", methods=["GET"])
 def landing():
-    """Landing page - public facing"""
-    return render_template('landing.html')
+    if session.get("account_id"):
+        return redirect(url_for("dashboard"))
+    if accounts.list_accounts():
+        return redirect(url_for("login"))
+    return redirect(url_for("setup"))
+
+
+@app.route("/setup", methods=["GET", "POST"])
+def setup():
+    if accounts.list_accounts():
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        shop_name = request.form.get("shop_name", "")
+        password = request.form.get("password") or None
+        confirmation = request.form.get("confirm_password", "")
+        if password and password != confirmation:
+            flash("The passwords do not match.", "error")
+        else:
+            try:
+                account = accounts.create_account(username, shop_name, password)
+            except ValueError as error:
+                flash(str(error), "error")
+            else:
+                session.clear()
+                session["account_id"] = account["id"]
+                return redirect(url_for("dashboard"))
+
+    return render_template("setup.html")
+
+
+@app.route("/login", methods=["GET"])
+def login():
+    account_list = accounts.list_accounts()
+    if not account_list:
+        return redirect(url_for("setup"))
+    if session.get("account_id") and accounts.get_account(session["account_id"]):
+        return redirect(url_for("dashboard"))
+    return render_template("login.html", accounts=account_list)
+
+
+@app.route("/login/<account_id>", methods=["POST"])
+def login_account(account_id):
+    account = accounts.get_account(account_id)
+    if not account or not accounts.verify_password(
+        account, request.form.get("password", "")
+    ):
+        flash("The password is incorrect. Try again.", "error")
+        return redirect(url_for("login"))
+
+    session.clear()
+    session["account_id"] = account["id"]
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
+@app.route("/accounts", methods=["GET", "POST"])
+def manage_accounts():
+    owner = accounts.get_account(session["account_id"])
+    if not owner.get("is_owner"):
+        abort(403)
+
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        shop_name = request.form.get("shop_name", "")
+        password = request.form.get("password") or None
+        if password and password != request.form.get("confirm_password", ""):
+            flash("The passwords do not match.", "error")
+        else:
+            try:
+                accounts.create_account(username, shop_name, password)
+            except ValueError as error:
+                flash(str(error), "error")
+            else:
+                flash("Local account created successfully.", "success")
+                return redirect(url_for("manage_accounts"))
+
+    return render_template("accounts.html", accounts=accounts.list_accounts())
+
+
+@app.route("/account", methods=["GET", "POST"])
+def account_settings():
+    account = accounts.get_account(session["account_id"])
+    if request.method == "POST":
+        new_password = request.form.get("new_password", "")
+        confirmation = request.form.get("confirm_password", "")
+        remove_password = request.form.get("remove_password") == "on"
+
+        if remove_password and new_password:
+            flash("Choose either a new password or passwordless sign-in.", "error")
+        elif new_password and new_password != confirmation:
+            flash("The passwords do not match.", "error")
+        elif account.get("password_hash") and not accounts.verify_password(
+            account, request.form.get("current_password", "")
+        ):
+            flash("The current password is incorrect.", "error")
+        else:
+            try:
+                accounts.update_account(
+                    account["id"],
+                    shop_name=request.form.get("shop_name", ""),
+                    password=new_password or None,
+                    remove_password=remove_password,
+                )
+            except ValueError as error:
+                flash(str(error), "error")
+            else:
+                flash("Account settings saved.", "success")
+                return redirect(url_for("account_settings"))
+
+    return render_template("account_settings.html", account=account)
 
 # ---------- FAVICON ----------
 @app.route('/favicon.ico')
@@ -158,7 +341,11 @@ def record_transaction():
 # ---------- QR CODE SERVING ----------
 @app.route('/storage/qrcodes/<path:filename>')
 def product_qr(filename):
-    return send_from_directory(QR_DIR, filename)
+    qr_directory = os.path.join(get_storage_path(), "ProductQRs")
+    image_path = safe_join(qr_directory, filename)
+    if not image_path or not os.path.isfile(image_path):
+        abort(404)
+    return send_file(BytesIO(load_bytes(image_path)), mimetype="image/png")
 
 # ---------- PRODUCT API ----------
 @app.route('/api/product/<product_code>', methods=['GET'])

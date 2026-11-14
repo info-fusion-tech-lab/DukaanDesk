@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Desktop application for Shop Management System",
-  "author": "New Fashion House",
+  "author": "Info Fusion Tech Lab",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -31,12 +31,17 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "assets/store.ico",
+        "to": "app-icon.ico"
       }
     ],
     "directories": {
       "output": "release"
     },
     "win": {
+      "icon": "assets/store.ico",
       "target": [
         {
           "target": "nsis",
@@ -48,15 +53,21 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/store.ico",
+      "uninstallerIcon": "assets/store.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "mac": {
+      "icon": "assets/store.icns",
       "target": [
         "dmg"
       ],
       "category": "public.app-category.business"
     },
     "linux": {
+      "icon": "assets/store.png",
       "target": [
         "AppImage",
         "deb"

@@ -1,17 +1,9 @@
-import os
-import json
-from tools.paths import STORAGE_PATH
+from tools.encrypted_json import load_json, save_json
+from tools.paths import storage_file
 
-JSON_FILE = os.path.join(STORAGE_PATH, "ProductList.json")
 
 def load_products():
-    if not os.path.exists(JSON_FILE) or os.path.getsize(JSON_FILE) == 0:
-        return {}
-    with open(JSON_FILE, 'r') as file:
-        try:
-            return json.load(file)
-        except json.JSONDecodeError:
-            return {}
+    return load_json(storage_file("ProductList.json"), {})
 
 def get_product(product_code):
     products = load_products()
@@ -42,8 +34,7 @@ def save_new_product(product):
     
     existing_products[product_code] = product_details
     
-    with open(JSON_FILE, 'w') as file:
-        json.dump(existing_products, file, indent=4)
+    save_json(storage_file("ProductList.json"), existing_products)
         
     print(f"Product '{product_details.get('Name')}' saved successfully.")
     return True
@@ -65,8 +56,7 @@ def update_quantity(product_code, net_change, is_sale=True):
     else:
         existing_products[product_code]["Quantity"] += net_change
     
-    with open(JSON_FILE, 'w') as file:
-        json.dump(existing_products, file, indent=4)
+    save_json(storage_file("ProductList.json"), existing_products)
         
     print(f"Quantity updated. New balance for {product_code}: {existing_products[product_code]['Quantity']}")
     return True
@@ -88,8 +78,7 @@ def update_product(product_code, updates):
     safe_updates = {k: v for k, v in updates.items() if k != "Code"}
     existing_products[product_code].update(safe_updates)
 
-    with open(JSON_FILE, 'w') as file:
-        json.dump(existing_products, file, indent=4)
+    save_json(storage_file("ProductList.json"), existing_products)
 
     print(f"Product '{product_code}' updated successfully.")
     return True
@@ -111,8 +100,7 @@ def remove_product(product_code):
     
     del existing_products[product_code]
     
-    with open(JSON_FILE, 'w') as file:
-        json.dump(existing_products, file, indent=4)
+    save_json(storage_file("ProductList.json"), existing_products)
     
     print(f"Product '{product_code}' removed successfully.")
     return True

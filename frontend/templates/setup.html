@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set up your shop</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+</head>
+<body class="auth-page">
+    <main class="auth-card">
+        <div class="auth-brand">
+            <img src="{{ url_for('favicon') }}" alt="">
+            <div><strong>Shop Management System</strong><br><span>First-time setup &middot; store.ico app icon</span></div>
+        </div>
+        <div class="auth-flashes">
+            {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="auth-flash">{{ message }}</div>
+            {% endfor %}
+        </div>
+        <h1>Set up your shop</h1>
+        <p class="auth-copy">Create the first local account and choose the name shown in the app.</p>
+        <form class="auth-form" method="post">
+            <label>Shop name
+                <input name="shop_name" maxlength="80" autocomplete="organization" required>
+            </label>
+            <label>Username
+                <input name="username" maxlength="40" autocomplete="username" required>
+            </label>
+            <label>App password (optional)
+                <input name="password" type="password" minlength="8" autocomplete="new-password">
+            </label>
+            <label>Confirm password
+                <input name="confirm_password" type="password" minlength="8" autocomplete="new-password">
+            </label>
+            <p class="auth-help">Leave both password fields blank for passwordless sign-in. Anyone with access to this computer can then open this account.</p>
+            <button class="auth-button" type="submit">Create local account</button>
+        </form>
+        <p class="auth-note">Your shop records stay on this computer and are encrypted at rest using the operating system's secure storage.</p>
+    </main>
+</body>
+</html>

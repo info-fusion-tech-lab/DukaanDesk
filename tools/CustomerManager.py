@@ -1,9 +1,7 @@
-import os
-import json
 from datetime import datetime
-from tools.paths import STORAGE_PATH
+from tools.encrypted_json import load_json, save_json
+from tools.paths import storage_file
 
-CUSTOMER_FILE = os.path.join(STORAGE_PATH, "CustomerList.json")
 
 # Sample Schema structure for context:
 # {
@@ -32,18 +30,11 @@ CUSTOMER_FILE = os.path.join(STORAGE_PATH, "CustomerList.json")
 
 def load_customers():
     """Loads all customer account data from JSON."""
-    if not os.path.exists(CUSTOMER_FILE) or os.path.getsize(CUSTOMER_FILE) == 0:
-        return {}
-    with open(CUSTOMER_FILE, 'r') as file:
-        try:
-            return json.load(file)
-        except json.JSONDecodeError:
-            return {}
+    return load_json(storage_file("CustomerList.json"), {})
 
 def save_customers(data):
     """Saves updated customer ledger data back to JSON."""
-    with open(CUSTOMER_FILE, 'w') as file:
-        json.dump(data, file, indent=4)
+    save_json(storage_file("CustomerList.json"), data)
 
 def add_customer(phone, name):
     """Creates a new customer account using their phone number as the key."""

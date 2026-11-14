@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose an account</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+</head>
+<body class="auth-page">
+    <main class="auth-card wide">
+        <div class="auth-brand">
+            <img src="{{ url_for('favicon') }}" alt="">
+            <div><strong>Shop Management System</strong><br><span>Local accounts on this computer</span></div>
+        </div>
+        <div class="auth-flashes">
+            {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="auth-flash">{{ message }}</div>
+            {% endfor %}
+        </div>
+        <h1>Who's using the app?</h1>
+        <p class="auth-copy">Choose your account to continue to its shop data.</p>
+        <section class="account-list">
+            {% for account in accounts %}
+            <article class="account-card">
+                <img src="{{ url_for('favicon') }}" alt="">
+                <strong>{{ account.username }}</strong>
+                <span>{{ account.shop_name }}</span>
+                <form method="post" action="{{ url_for('login_account', account_id=account.id) }}">
+                    {% if account.has_password %}
+                    <input name="password" type="password" autocomplete="current-password" placeholder="Password" required>
+                    <button class="auth-button" type="submit">Log in</button>
+                    {% else %}
+                    <small>Passwordless account</small>
+                    <button class="auth-button" type="submit">Continue</button>
+                    {% endif %}
+                </form>
+            </article>
+            {% endfor %}
+        </section>
+        <p class="auth-note">Each account has its own shop records. Passwordless accounts are convenient, but do not prevent other people using this computer from opening them.</p>
+    </main>
+</body>
+</html>
