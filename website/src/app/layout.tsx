@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   },
   description:
     "Manage products, customers, sales and reports in a straightforward desktop app. Your shop records stay on your computer.",
+  verification: {
+    google: "Lv7vRuVweaHAf0XGFsruOn4nYA7z7d8SSC0QVVH8Ex4",
+  },
   openGraph: {
     type: "website",
     siteName,
