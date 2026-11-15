@@ -11,6 +11,8 @@ class LocalStaticAssetTests(unittest.TestCase):
             "/static/vendor/inter/inter-latin-wght-normal.woff2",
             "/static/vendor/fontawesome/css/all.min.css",
             "/static/vendor/fontawesome/webfonts/fa-solid-900.woff2",
+            "/static/DukaanDesk_Logo_Horizontal.png",
+            "/favicon.ico",
         )
 
         for asset_path in asset_paths:

@@ -1,20 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="system">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Set up your shop</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Set up your shop - DukaanDesk</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='fonts.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
 </head>
 <body class="auth-page">
     <main class="auth-card">
         <div class="auth-brand">
-            <img src="{{ url_for('favicon') }}" alt="">
-            <div><strong>DukaanDesk</strong><br><span>First-time setup &middot; local shop management</span></div>
+            <img class="brand-logo" src="{{ url_for('static', filename='DukaanDesk_Logo_Horizontal.png') }}" alt="Dukaan Desk">
+            <span>First-time setup · local shop management</span>
         </div>
         <div class="auth-flashes">
             {% for category, message in get_flashed_messages(with_categories=true) %}
-            <div class="auth-flash">{{ message }}</div>
+            <div class="auth-flash {{ category }}">{{ message }}</div>
             {% endfor %}
         </div>
         <h1>Set up your shop</h1>

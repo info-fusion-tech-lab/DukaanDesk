@@ -152,6 +152,18 @@ body {
     object-fit: contain;
     border-radius: var(--radius-sm);
 }
+.logo img.app-logo {
+    width: 160px;
+    height: auto;
+    max-width: 100%;
+    border-radius: 0;
+}
+.sidebar.collapsed .logo img.app-logo {
+    width: 40px;
+}
+.sidebar.collapsed .sidebar-toggle {
+    display: none;
+}
 
 .sidebar-toggle {
     background: none;

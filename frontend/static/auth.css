@@ -1,202 +1,739 @@
-* {
+:root {
+    color-scheme: light;
+    --accent: #4f46e5;
+    --bg: #f3f5fa;
+    --surface: #fff;
+    --surface-2: #f7f8fc;
+    --surface-3: #eef1f8;
+    --border: #e4e8f1;
+    --border-strong: #cfd6e6;
+    --text: #0f1729;
+    --text-2: #5b6680;
+    --text-3: #8b95ab;
+    --red: #dc3545;
+    --red-soft: #fdeaea;
+    --green: #0e9f6e;
+    --green-soft: #e2f8ef;
+    --accent-soft: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    --accent-ring: color-mix(in srgb, var(--accent) 26%, transparent);
+    --shadow: 0 18px 60px rgba(15, 23, 41, .12);
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #090d18;
+    --surface: #111726;
+    --surface-2: #161e30;
+    --surface-3: #1d2639;
+    --border: #232d42;
+    --border-strong: #334059;
+    --text: #e9eef9;
+    --text-2: #9da9c2;
+    --text-3: #71809b;
+    --red-soft: #391418;
+    --green-soft: #0b2e25;
+    --shadow: 0 24px 70px rgba(0, 0, 0, .45);
+}
+
+@media (prefers-color-scheme: dark) {
+    [data-theme="system"] {
+        color-scheme: dark;
+        --bg: #090d18;
+        --surface: #111726;
+        --surface-2: #161e30;
+        --surface-3: #1d2639;
+        --border: #232d42;
+        --border-strong: #334059;
+        --text: #e9eef9;
+        --text-2: #9da9c2;
+        --text-3: #71809b;
+        --red-soft: #391418;
+        --green-soft: #0b2e25;
+        --shadow: 0 24px 70px rgba(0, 0, 0, .45);
+    }
+}
+
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
-body.auth-page {
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    color: var(--text);
+    background: var(--bg);
+    font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: color .2s, background .2s;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    color: inherit;
+}
+
+.auth-page {
     min-height: 100vh;
     display: grid;
     place-items: center;
     padding: 32px 18px;
-    background: radial-gradient(circle at top left, #e5e3ff, #f3f5fb 55%, #eaf8f6);
-    color: #202033;
-    font-family: "Segoe UI", Arial, sans-serif;
+    background:
+        radial-gradient(ellipse at 12% 0, color-mix(in srgb, var(--accent) 13%, transparent), transparent 42%),
+        var(--bg);
 }
 
 .auth-card {
-    width: min(100%, 520px);
-    padding: 36px;
-    border: 1px solid #e8e8f0;
+    width: min(100%, 560px);
+    padding: clamp(24px, 5vw, 40px);
+    border: 1px solid var(--border);
     border-radius: 22px;
-    background: #fff;
-    box-shadow: 0 18px 60px rgba(37, 36, 76, 0.12);
+    background: var(--surface);
+    box-shadow: var(--shadow);
 }
 
 .auth-card.wide {
-    width: min(100%, 780px);
+    width: min(100%, 900px);
 }
 
 .auth-brand {
     display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 26px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 30px;
 }
 
-.auth-brand img {
-    width: 48px;
-    height: 48px;
+.brand-logo {
+    display: block;
+    width: 190px;
+    max-width: 100%;
+    height: auto;
     object-fit: contain;
+    padding: 5px 8px;
+    border-radius: 9px;
+    background: #fff;
+}
+
+.auth-brand span,
+.auth-copy,
+.auth-note,
+.auth-help {
+    color: var(--text-2);
 }
 
 .auth-brand span {
-    color: #66647b;
     font-size: 13px;
 }
 
 .auth-card h1 {
-    margin: 0 0 8px;
-    font-size: 28px;
+    margin: 0 0 7px;
+    font-size: clamp(24px, 4vw, 30px);
+    line-height: 1.2;
+    letter-spacing: -.03em;
 }
 
 .auth-copy {
     margin: 0 0 24px;
-    color: #66647b;
-    line-height: 1.55;
 }
 
-.auth-form {
+.auth-form,
+.account-form {
     display: grid;
-    gap: 16px;
+    gap: 15px;
 }
 
-.auth-form label {
+.auth-form label,
+.account-form label {
     display: grid;
     gap: 7px;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 650;
 }
 
-.auth-form input {
+.auth-form input,
+.account-form input {
     width: 100%;
-    min-height: 44px;
-    padding: 10px 12px;
-    border: 1px solid #dcdce8;
+    min-height: 42px;
+    padding: 9px 11px;
+    border: 1px solid var(--border-strong);
     border-radius: 9px;
-    font: inherit;
+    background: var(--surface);
+    color: var(--text);
 }
 
-.auth-form input:focus {
-    outline: 3px solid rgba(108, 99, 255, 0.18);
-    border-color: #6c63ff;
+.auth-form input:focus,
+.account-form input:focus {
+    outline: 0;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
 .auth-help {
-    margin: -8px 0 0;
-    color: #6b6b82;
-    font-size: 13px;
-    line-height: 1.5;
+    margin: -5px 0 0;
+    font-size: 12.5px;
+    line-height: 1.55;
 }
 
-.auth-button {
-    min-height: 46px;
-    padding: 11px 16px;
-    border: 0;
-    border-radius: 9px;
-    background: #6c63ff;
-    color: #fff;
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
+.auth-note {
+    margin: 22px 0 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-2);
+    font-size: 12.5px;
+    line-height: 1.55;
 }
 
-.auth-button:hover {
-    background: #554bd8;
-}
-
-.auth-flashes {
+.auth-flashes,
+.flash-list {
     display: grid;
     gap: 8px;
     margin-bottom: 18px;
 }
 
-.auth-flash {
+.auth-flash,
+.flash-message {
     padding: 11px 13px;
-    border-radius: 8px;
-    background: #fff0ef;
-    color: #a3312c;
-    font-size: 14px;
+    border: 1px solid color-mix(in srgb, var(--red) 30%, var(--border));
+    border-radius: 9px;
+    background: var(--red-soft);
+    color: var(--red);
+    font-size: 13px;
+}
+
+.auth-flash.success,
+.flash-message.success {
+    border-color: color-mix(in srgb, var(--green) 35%, var(--border));
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+.auth-button,
+.btn {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    font-weight: 650;
+    text-decoration: none;
+    transition: background .15s, border-color .15s, transform .08s;
+}
+
+.auth-button,
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+}
+
+.auth-button:hover,
+.btn-primary:hover {
+    filter: brightness(.92);
+}
+
+.btn-ghost {
+    border-color: var(--border);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.btn-ghost:hover {
+    background: var(--surface-2);
+}
+
+.btn-danger {
+    background: var(--red-soft);
+    color: var(--red);
+}
+
+.btn:disabled {
+    opacity: .55;
+    cursor: not-allowed;
 }
 
 .account-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     gap: 14px;
 }
 
 .account-card {
     display: grid;
     align-content: start;
-    gap: 10px;
-    padding: 18px;
-    border: 1px solid #e6e5f0;
+    gap: 9px;
+    padding: 17px;
+    border: 1px solid var(--border);
     border-radius: 14px;
-    background: #fbfbfe;
-}
-
-.account-card img {
-    width: 46px;
-    height: 46px;
-    object-fit: contain;
+    background: var(--surface-2);
 }
 
 .account-card strong {
-    font-size: 17px;
+    font-size: 16px;
 }
 
 .account-card span,
 .account-card small {
-    color: #6b6b82;
+    color: var(--text-2);
 }
 
 .account-card form {
     display: grid;
     gap: 10px;
-    margin-top: 6px;
+    margin-top: 5px;
 }
 
-.auth-note {
-    margin-top: 20px;
-    padding: 12px 14px;
+.account-app {
+    min-height: 100vh;
+}
+
+.app-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    width: 252px;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 10px 12px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    transition: transform .2s, width .2s;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 10px 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.sidebar-brand .brand-logo {
+    width: 178px;
+}
+
+.app-nav {
+    display: grid;
+    gap: 4px;
+    padding-top: 14px;
+}
+
+.app-nav a,
+.sidebar-signout {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border: 0;
     border-radius: 9px;
-    background: #f3f2ff;
-    color: #4a4778;
+    background: transparent;
+    color: var(--text-2);
     font-size: 13px;
-    line-height: 1.5;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: none;
 }
 
-.auth-link {
-    display: inline-block;
-    margin-top: 18px;
-    color: #554bd8;
-    font-weight: 600;
-    text-decoration: none;
+.app-nav a:hover,
+.sidebar-signout:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.app-nav a.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.app-nav svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.sidebar-bottom {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.sidebar-bottom p {
+    margin: 0 10px 8px;
+    overflow: hidden;
+    color: var(--text-3);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.main-shell {
+    min-height: 100vh;
+    margin-left: 252px;
+    transition: margin-left .2s;
+}
+
+.page-topbar {
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 26px;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.page-topbar h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+}
+
+.page-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.theme-toggle,
+.menu-toggle {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text-2);
+}
+
+.theme-toggle:hover,
+.menu-toggle:hover {
+    color: var(--text);
+    background: var(--surface-2);
+}
+
+.account-avatar {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.menu-toggle {
+    display: none;
+}
+
+.account-content {
+    width: min(100%, 1180px);
+    margin: 0 auto;
+    padding: 24px 26px 52px;
+}
+
+.account-content h2 {
+    margin: 0 0 5px;
+    font-size: 16px;
+    letter-spacing: -.01em;
+}
+
+.account-content p {
+    margin: 0 0 16px;
+    color: var(--text-2);
+}
+
+.account-card-panel {
+    margin-bottom: 16px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgba(15, 23, 41, .05);
+}
+
+.account-card-panel.danger-zone {
+    border-color: color-mix(in srgb, var(--red) 45%, var(--border));
+}
+
+.account-form {
+    max-width: 640px;
+}
+
+.account-form .inline-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-weight: 500;
+}
+
+.account-form .inline-check input {
+    width: 16px;
+    min-height: 16px;
+    margin: 2px 0 0;
+}
+
+.account-form button {
+    justify-self: start;
 }
 
 .account-list-admin {
     display: grid;
     gap: 10px;
-    margin: 20px 0 28px;
+    margin: 16px 0 26px;
 }
 
 .account-row {
     display: flex;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
-    padding: 14px;
-    border: 1px solid #e6e5f0;
-    border-radius: 10px;
+    gap: 18px;
+    padding: 15px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-2);
 }
 
-.account-row span {
-    color: #6b6b82;
+.account-row-details {
+    min-width: 180px;
+}
+
+.account-row-details strong {
+    display: block;
+    margin-bottom: 3px;
+}
+
+.account-row-details span {
+    color: var(--text-2);
+    font-size: 12.5px;
+}
+
+.account-delete-form {
+    width: min(100%, 320px);
+    display: grid;
+    gap: 10px;
+}
+
+.account-delete-form .account-form {
+    width: 100%;
+}
+
+.account-delete-form button {
+    justify-self: start;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+.sidebar-backdrop {
+    display: none;
+}
+
+.layout-compact .app-sidebar {
+    width: 78px;
+}
+
+.layout-compact .sidebar-brand {
+    justify-content: center;
+    padding-inline: 0;
+}
+
+.layout-compact .sidebar-brand .brand-logo {
+    width: 56px;
+}
+
+.layout-compact .app-nav a,
+.layout-compact .sidebar-signout {
+    justify-content: center;
+    overflow: hidden;
+    font-size: 0;
+}
+
+.layout-compact .app-nav svg {
+    width: 19px;
+    height: 19px;
+}
+
+.layout-compact .sidebar-bottom p {
+    display: none;
+}
+
+.layout-compact .main-shell {
+    margin-left: 78px;
+}
+
+.layout-topnav .app-sidebar {
+    position: sticky;
+    inset: 0 auto auto;
+    width: 100%;
+    min-height: 62px;
+    flex-direction: row;
+    align-items: center;
+    padding: 6px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.layout-topnav .sidebar-brand {
+    min-width: 190px;
+    padding: 0 12px 0 0;
+    border: 0;
+}
+
+.layout-topnav .app-nav {
+    display: flex;
+    flex: 1;
+    padding: 0;
+    overflow-x: auto;
+}
+
+.layout-topnav .app-nav a {
+    width: auto;
+    white-space: nowrap;
+}
+
+.layout-topnav .sidebar-bottom {
+    margin: 0 0 0 auto;
+    padding: 0;
+    border: 0;
+}
+
+.layout-topnav .sidebar-bottom p {
+    display: none;
+}
+
+.layout-topnav .main-shell {
+    margin-left: 0;
+}
+
+@media (max-width: 760px) {
+    .app-sidebar {
+        transform: translateX(-105%);
+        box-shadow: var(--shadow);
+    }
+
+    .app-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .main-shell,
+    .layout-compact .main-shell {
+        margin-left: 0;
+    }
+
+    .layout-compact .app-sidebar {
+        width: 252px;
+    }
+
+    .layout-compact .sidebar-brand .brand-logo {
+        width: 178px;
+    }
+
+    .layout-compact .app-nav a,
+    .layout-compact .sidebar-signout {
+        justify-content: flex-start;
+        font-size: 13px;
+    }
+
+    .layout-topnav .app-sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 252px;
+        height: 100vh;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px 10px 12px;
+        border-right: 1px solid var(--border);
+    }
+
+    .layout-topnav .sidebar-brand {
+        min-width: 0;
+        padding: 0 10px 14px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .layout-topnav .app-nav {
+        display: grid;
+        padding-top: 14px;
+    }
+
+    .layout-topnav .app-nav a {
+        width: 100%;
+    }
+
+    .layout-topnav .sidebar-bottom {
+        margin: auto 0 0;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+    }
+
+    .layout-topnav .sidebar-bottom p {
+        display: block;
+    }
+
+    .menu-toggle {
+        display: grid;
+    }
+
+    .sidebar-backdrop.open {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 19;
+        background: rgba(9, 13, 25, .48);
+    }
+
+    .page-topbar {
+        padding-inline: 16px;
+    }
+
+    .account-content {
+        padding: 18px 14px 36px;
+    }
 }
 
 @media (max-width: 520px) {
     .auth-card {
-        padding: 26px 20px;
+        padding: 24px 20px;
     }
 
     .account-row {
         flex-direction: column;
+    }
+
+    .account-delete-form {
+        width: 100%;
+    }
+
+    .account-card-panel {
+        padding: 16px;
     }
 }

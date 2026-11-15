@@ -113,6 +113,11 @@ class EncryptedAccountTests(unittest.TestCase):
 
     def test_first_run_login_logout_and_owner_account_creation(self):
         client = app.test_client()
+        response = client.get("/setup")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'data-theme="system"', response.data)
+        self.assertIn(b'class="auth-card"', response.data)
+
         response = client.post(
             "/setup",
             data={"shop_name": "Corner Shop", "username": "Owner"},
@@ -155,6 +160,7 @@ class EncryptedAccountTests(unittest.TestCase):
         client.post("/logout")
         response = client.get("/login")
         self.assertEqual(response.status_code, 200)
+        self.assertIn(b'data-theme="system"', response.data)
         self.assertIn(b"Staff", response.data)
 
         client.post(f"/login/{staff['id']}", data={})

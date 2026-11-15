@@ -1,20 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="system">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choose an account</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Choose an account - DukaanDesk</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='fonts.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
 </head>
 <body class="auth-page">
     <main class="auth-card wide">
         <div class="auth-brand">
-            <img src="{{ url_for('favicon') }}" alt="">
-            <div><strong>DukaanDesk</strong><br><span>Local accounts on this computer</span></div>
+            <img class="brand-logo" src="{{ url_for('static', filename='DukaanDesk_Logo_Horizontal.png') }}" alt="Dukaan Desk">
+            <span>Local accounts on this computer</span>
         </div>
         <div class="auth-flashes">
             {% for category, message in get_flashed_messages(with_categories=true) %}
-            <div class="auth-flash">{{ message }}</div>
+            <div class="auth-flash {{ category }}">{{ message }}</div>
             {% endfor %}
         </div>
         <h1>Who's using the app?</h1>
@@ -22,7 +23,6 @@
         <section class="account-list">
             {% for account in accounts %}
             <article class="account-card">
-                <img src="{{ url_for('favicon') }}" alt="">
                 <strong>{{ account.username }}</strong>
                 <span>{{ account.shop_name }}</span>
                 <form method="post" action="{{ url_for('login_account', account_id=account.id) }}">

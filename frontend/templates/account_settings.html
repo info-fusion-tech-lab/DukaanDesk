@@ -1,14 +1,13 @@
-{% extends "base.html" %}
+{% extends "account_shell.html" %}
 
 {% block title %}Account settings - {{ shop_name }}{% endblock %}
 {% block page_title %}Account settings{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">{% endblock %}
 
 {% block content %}
-<section class="dashboard-card" style="padding: 24px;">
-    <h2>{{ account.username }}</h2>
+<section class="account-card-panel">
+    <h2>Account details</h2>
     <p>Update your shop name or app password. This does not change your Windows account password.</p>
-    <form class="auth-form" method="post">
+    <form class="account-form" method="post">
         <label>Shop name
             <input name="shop_name" maxlength="80" value="{{ account.shop_name }}" required>
         </label>
@@ -25,9 +24,58 @@
         </label>
         <p class="auth-help">Leave both new-password fields blank to keep your current setting.</p>
         {% if account.password_hash %}
-        <label><span><input type="checkbox" name="remove_password" style="width:auto;min-height:auto"> Remove app password</span></label>
+        <label class="inline-check"><input type="checkbox" name="remove_password"> Remove app password</label>
         {% endif %}
         <button class="btn btn-primary" type="submit">Save settings</button>
     </form>
+</section>
+
+<section class="account-card-panel danger-zone">
+    <h2>Delete account and shop data</h2>
+    <p>This permanently removes this local account and its encrypted shop records from this computer.</p>
+    {% if account.password_hash %}
+    <form class="account-form" method="post" action="{{ url_for('delete_local_account') }}" onsubmit="return confirm('Permanently delete this account and its shop data?');">
+        <label>Current app password
+            <input name="current_password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="btn btn-danger" type="submit">Delete account and data</button>
+    </form>
+    {% else %}
+    <form class="account-form" method="post" action="{{ url_for('delete_local_account') }}" id="deletePasswordlessAccount">
+        <p class="auth-help">Before deletion, the app will download an export. Keep the file before confirming removal.</p>
+        <button class="btn btn-danger" type="button" id="exportAndContinue">Export data and continue</button>
+        <div id="confirmPasswordlessDelete" hidden>
+            <label class="inline-check"><input type="checkbox" name="confirm_export" required> I saved the exported data file.</label>
+            <label>Type DELETE to confirm
+                <input name="confirm_phrase" autocomplete="off" required>
+            </label>
+            <button class="btn btn-danger" type="submit">Permanently delete account and data</button>
+        </div>
+    </form>
+    <script>
+        document.getElementById("exportAndContinue").addEventListener("click", async function () {
+            if (!confirm("The app will export this account's shop data before deletion. Continue?")) return;
+            this.disabled = true;
+            try {
+                const response = await fetch("{{ url_for('export_account_data') }}");
+                if (!response.ok) throw new Error("The data export failed.");
+                const file = await response.blob();
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(file);
+                link.download = "dukaandesk-account-export.json";
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+                document.getElementById("confirmPasswordlessDelete").hidden = false;
+            } catch (error) {
+                alert(error.message || "The data export failed.");
+            } finally {
+                this.disabled = false;
+            }
+        });
+        document.getElementById("deletePasswordlessAccount").addEventListener("submit", function (event) {
+            if (!confirm("Permanently delete this account and all its shop data?")) event.preventDefault();
+        });
+    </script>
+    {% endif %}
 </section>
 {% endblock %}

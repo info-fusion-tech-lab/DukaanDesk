@@ -11,8 +11,11 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <Link className="brand" href="/" aria-label="DukaanDesk home">
-        <span className="brand-mark" aria-hidden="true">D</span>
-        <span>DukaanDesk</span>
+        <img
+          className="brand-logo"
+          src="/DukaanDesk_Logo_Horizontal.png"
+          alt="DukaanDesk"
+        />
       </Link>
       <nav className="site-nav" aria-label="Main navigation">
         {links.map((link) => (

@@ -1,23 +1,47 @@
-{% extends "base.html" %}
+{% extends "account_shell.html" %}
 
 {% block title %}Manage accounts - {{ shop_name }}{% endblock %}
-{% block page_title %}Manage local accounts{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">{% endblock %}
+{% block page_title %}Manage accounts{% endblock %}
 
 {% block content %}
-<section class="dashboard-card" style="padding: 24px;">
+<section class="account-card-panel">
     <h2>Accounts on this computer</h2>
+    <p>Each account has a separate encrypted shop-data space.</p>
     <div class="account-list-admin">
         {% for account in accounts %}
-        <div class="account-row">
-            <strong>{{ account.username }}{% if account.is_owner %} (Owner){% endif %}</strong>
-            <span>{{ account.shop_name }} &middot; {% if account.has_password %}Password protected{% else %}Passwordless{% endif %}</span>
-        </div>
+        <article class="account-row">
+            <div class="account-row-details">
+                <strong>{{ account.username }}{% if account.is_owner %} (Owner){% endif %}</strong>
+                <span>{{ account.shop_name }} · {% if account.has_password %}Password protected{% else %}Passwordless{% endif %}</span>
+            </div>
+            {% if account.has_password %}
+            <form class="account-delete-form account-form" method="post" action="{{ url_for('delete_managed_account', account_id=account.id) }}" onsubmit="return confirm('Permanently delete this account and its shop data?');">
+                <label>Account password
+                    <input name="target_password" type="password" autocomplete="current-password" required>
+                </label>
+                <button class="btn btn-danger" type="submit">Delete account</button>
+            </form>
+            {% else %}
+            <div class="account-delete-form">
+                <button class="btn btn-danger" type="button" data-export-url="{{ url_for('export_managed_account_data', account_id=account.id) }}" data-delete-form="delete-account-{{ account.id }}">Export data and continue</button>
+                <form class="account-form" method="post" action="{{ url_for('delete_managed_account', account_id=account.id) }}" id="delete-account-{{ account.id }}" hidden onsubmit="return confirm('Permanently delete this account and its shop data?');">
+                    <label class="inline-check"><input type="checkbox" name="confirm_export" required> I saved the exported data file.</label>
+                    <label>Type DELETE to confirm
+                        <input name="confirm_phrase" autocomplete="off" required>
+                    </label>
+                    <button class="btn btn-danger" type="submit">Permanently delete account</button>
+                </form>
+            </div>
+            {% endif %}
+        </article>
         {% endfor %}
     </div>
+</section>
+
+<section class="account-card-panel">
     <h2>Create a local account</h2>
-    <p>Each account receives a separate encrypted shop-data folder.</p>
-    <form class="auth-form" method="post">
+    <p>New accounts start with their own encrypted shop data.</p>
+    <form class="account-form" method="post">
         <label>Shop name
             <input name="shop_name" maxlength="80" required>
         </label>
@@ -34,4 +58,27 @@
         <button class="btn btn-primary" type="submit">Create account</button>
     </form>
 </section>
+<script>
+    document.addEventListener("click", async function (event) {
+        const button = event.target.closest("[data-export-url]");
+        if (!button) return;
+        if (!confirm("The app will export this account's shop data before deletion. Continue?")) return;
+        button.disabled = true;
+        try {
+            const response = await fetch(button.dataset.exportUrl);
+            if (!response.ok) throw new Error("The data export failed.");
+            const file = await response.blob();
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(file);
+            link.download = "dukaandesk-account-export.json";
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+            document.getElementById(button.dataset.deleteForm).hidden = false;
+        } catch (error) {
+            alert(error.message || "The data export failed.");
+        } finally {
+            button.disabled = false;
+        }
+    });
+</script>
 {% endblock %}

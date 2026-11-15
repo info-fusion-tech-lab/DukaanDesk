@@ -1,0 +1,3638 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dukaan Desk — Shop Manager</title>
+<link rel="icon" href="{{ url_for('favicon') }}">
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root{
+  --accent:#4f46e5;
+  --accent-soft:color-mix(in srgb, var(--accent) 12%, var(--surface));
+  --accent-ring:color-mix(in srgb, var(--accent) 26%, transparent);
+  --accent-ink:#ffffff;
+
+  --bg:#f3f5fa;
+  --surface:#ffffff;
+  --surface-2:#f7f8fc;
+  --surface-3:#eef1f8;
+  --border:#e4e8f1;
+  --border-strong:#cfd6e6;
+
+  --text:#0f1729;
+  --text-2:#5b6680;
+  --text-3:#8b95ab;
+
+  --green:#0e9f6e;   --green-soft:#e2f8ef;
+  --red:#e02424;     --red-soft:#fdeaea;
+  --amber:#b45309;   --amber-soft:#fdf3d7;
+  --blue:#2563eb;    --blue-soft:#e6eeff;
+
+  --shadow-sm:0 1px 2px rgba(15,23,41,.06);
+  --shadow-md:0 10px 30px -14px rgba(15,23,41,.25);
+  --shadow-lg:0 28px 70px -24px rgba(15,23,41,.45);
+
+  --radius:16px;
+  --radius-sm:10px;
+  --sidebar-w:252px;
+  --sidebar-w-min:78px;
+}
+[data-theme="dark"]{
+  --bg:#090d18;
+  --surface:#111726;
+  --surface-2:#161e30;
+  --surface-3:#1d2639;
+  --border:#232d42;
+  --border-strong:#334059;
+  --text:#e9eef9;
+  --text-2:#9da9c2;
+  --text-3:#71809b;
+  --green-soft:#0b2e25;
+  --red-soft:#391418;
+  --amber-soft:#38280d;
+  --blue-soft:#131f3d;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.5);
+  --shadow-md:0 10px 30px -14px rgba(0,0,0,.75);
+  --shadow-lg:0 28px 70px -24px rgba(0,0,0,.85);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;font-size:14px;line-height:1.5;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg);color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  transition:background .2s,color .2s;
+}
+body.modal-open{overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+h1,h2,h3,p{margin:0}
+.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.muted{color:var(--text-2)}
+.small{font-size:12.5px}
+.right{text-align:right}
+.hr{height:1px;background:var(--border);border:0;margin:18px 0}
+::selection{background:var(--accent);color:#fff}
+
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px;border:3px solid transparent;background-clip:content-box}
+*::-webkit-scrollbar-track{background:transparent}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app{min-height:100vh}
+
+.sidebar{
+  position:fixed;inset:0 auto 0 0;z-index:60;width:var(--sidebar-w);
+  display:flex;flex-direction:column;
+  background:var(--surface);border-right:1px solid var(--border);
+  transition:width .18s ease,transform .22s ease;
+}
+.brand{display:flex;align-items:center;gap:11px;padding:16px 16px;min-height:64px}
+.brand-logo{display:block;width:178px;max-width:calc(100% - 42px);height:auto;object-fit:contain}
+.brand-mark{
+  width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:11px;
+  background:linear-gradient(145deg,var(--accent),color-mix(in srgb,var(--accent) 55%, #000));
+  color:#fff;box-shadow:0 6px 16px -6px var(--accent);
+}
+.brand-text{font-size:16px;font-weight:750;letter-spacing:-.02em;white-space:nowrap;overflow:hidden}
+.brand-text em{font-style:normal;color:var(--accent)}
+.collapse-btn{margin-left:auto}
+
+.nav{flex:1;overflow-y:auto;padding:6px 10px 14px;display:flex;flex-direction:column;gap:2px}
+.nav-item{
+  display:flex;align-items:center;gap:11px;width:100%;
+  padding:9px 11px;border-radius:var(--radius-sm);
+  color:var(--text-2);font-weight:550;font-size:13.5px;white-space:nowrap;
+  transition:background .14s,color .14s;
+}
+.nav-item:hover{background:var(--surface-2);color:var(--text)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:650}
+.nav-item .ic{width:19px;height:19px}
+.nav-label{overflow:hidden;text-overflow:ellipsis}
+
+.sidebar-foot{padding:12px 16px 16px;border-top:1px solid var(--border)}
+.shop-chip{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden}
+.shop-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-soft);flex:none}
+
+.main{margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh;transition:margin-left .18s ease}
+
+html.layout-compact .sidebar{width:var(--sidebar-w-min)}
+html.layout-compact .main{margin-left:var(--sidebar-w-min)}
+html.layout-compact .brand-text,
+html.layout-compact .nav-label,
+html.layout-compact .sidebar-foot{display:none}
+html.layout-compact .brand{justify-content:center;padding:16px 8px}
+html.layout-compact .brand-logo{width:56px;max-width:100%}
+html.layout-compact .collapse-btn{display:none}
+html.layout-compact .nav-item{justify-content:center;padding:11px 0}
+
+html.layout-topnav .sidebar{
+  position:sticky;top:0;width:100%;height:auto;flex-direction:row;align-items:center;
+  border-right:0;border-bottom:1px solid var(--border);z-index:70;
+}
+html.layout-topnav .brand{padding:10px 16px;min-height:56px}
+html.layout-topnav .nav{flex-direction:row;overflow-x:auto;padding:8px 10px;gap:4px}
+html.layout-topnav .nav-item{width:auto;padding:8px 13px}
+html.layout-topnav .sidebar-foot,html.layout-topnav .collapse-btn{display:none}
+html.layout-topnav .main{margin-left:0}
+html.layout-topnav .brand-text{display:block}
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
+  min-height:64px;padding:10px 24px;
+  background:color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);
+  border-bottom:1px solid var(--border);
+}
+.search{
+  display:flex;align-items:center;gap:9px;flex:1;max-width:420px;
+  padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface-2);color:var(--text-3);transition:border-color .15s,box-shadow .15s;
+}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring);background:var(--surface)}
+.search input{flex:1;min-width:0;border:0;background:none;outline:0;color:var(--text)}
+.search input::placeholder{color:var(--text-3)}
+.search kbd{
+  font:inherit;font-size:11px;padding:1px 6px;border-radius:5px;
+  border:1px solid var(--border-strong);color:var(--text-3);background:var(--surface);
+}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:6px}
+.icon-btn{
+  position:relative;display:inline-grid;place-items:center;width:36px;height:36px;
+  border-radius:10px;color:var(--text-2);transition:background .14s,color .14s;
+  text-decoration:none;
+}
+.icon-btn:hover{background:var(--surface-2);color:var(--text)}
+.icon-btn.sm{width:28px;height:28px;border-radius:8px}
+.icon-btn.danger:hover{background:var(--red-soft);color:var(--red)}
+.badge-dot{
+  position:absolute;top:3px;right:3px;min-width:16px;height:16px;padding:0 4px;
+  display:grid;place-items:center;border-radius:99px;background:var(--red);color:#fff;
+  font-size:10px;font-weight:700;line-height:1;
+}
+.badge-dot[hidden]{display:none}
+.avatar{
+  width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
+  background:var(--accent-soft);color:var(--accent);font-weight:750;font-size:12.5px;
+  letter-spacing:.02em;user-select:none;border:1px solid var(--border);
+}
+.only-mobile{display:none}
+
+.notif-wrap{position:relative}
+.popover{
+  display:none;position:absolute;right:0;top:calc(100% + 10px);width:min(360px,calc(100vw - 28px));
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  box-shadow:var(--shadow-lg);padding:14px;z-index:80;
+}
+.popover.open{display:block;animation:pop .16s ease}
+.popover h3{font-size:13px;margin-bottom:10px;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
+
+/* ============================================================
+   CONTENT / PAGES
+   ============================================================ */
+.content{flex:1;width:100%;max-width:1500px;margin:0 auto;padding:22px 26px 64px}
+.page{display:none}
+.page.active{display:block;animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.page-head h1{font-size:24px;letter-spacing:-.025em;font-weight:750}
+.page-head p{margin-top:3px;font-size:13px}
+.head-actions{display:flex;gap:9px;flex-wrap:wrap}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:9px 15px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;
+  border:1px solid transparent;transition:background .14s,border-color .14s,transform .08s,box-shadow .14s;
+  white-space:nowrap;
+}
+.btn:active{transform:translateY(1px)}
+.btn .ic{width:16px;height:16px}
+.btn-primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 6px 16px -8px var(--accent)}
+.btn-primary:hover{background:color-mix(in srgb,var(--accent) 88%, #000)}
+.btn-ghost{background:var(--surface);border-color:var(--border);color:var(--text)}
+.btn-ghost:hover{background:var(--surface-2);border-color:var(--border-strong)}
+.btn-danger{background:var(--red-soft);color:var(--red)}
+.btn-danger:hover{background:color-mix(in srgb,var(--red) 16%, var(--surface))}
+.btn-success{background:var(--green);color:#fff}
+.btn-success:hover{background:color-mix(in srgb,var(--green) 88%, #000)}
+.btn.sm{padding:6px 11px;font-size:12.5px;border-radius:9px}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap}
+.link{color:var(--accent);font-size:13px;font-weight:600;padding:0}
+.link:hover{text-decoration:underline}
+
+/* ============================================================
+   CARDS / STATS
+   ============================================================ */
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;box-shadow:var(--shadow-sm);
+}
+.card-title{font-size:15px;font-weight:700;letter-spacing:-.01em;margin-bottom:14px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.card-head h2{font-size:15px;font-weight:700;letter-spacing:-.01em}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:13px}
+.stat{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:15px 16px;box-shadow:var(--shadow-sm);
+}
+.stat-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.stat-label{font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em}
+.stat-icon{
+  width:28px;height:28px;border-radius:9px;display:grid;place-items:center;
+  background:var(--accent-soft);color:var(--accent);
+}
+.stat-icon .ic{width:15px;height:15px}
+.stat-icon.green{background:var(--green-soft);color:var(--green)}
+.stat-icon.red{background:var(--red-soft);color:var(--red)}
+.stat-icon.amber{background:var(--amber-soft);color:var(--amber)}
+.stat-icon.blue{background:var(--blue-soft);color:var(--blue)}
+.stat-value{font-size:22px;font-weight:750;letter-spacing:-.03em;line-height:1.15}
+.stat-sub{font-size:12px;color:var(--text-3);margin-top:4px}
+
+.grid-2{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:16px;margin-top:16px}
+.grid-2.even{grid-template-columns:1fr 1fr}
+.stack{display:flex;flex-direction:column;gap:16px}
+
+/* ============================================================
+   CHART
+   ============================================================ */
+.chart-bars{display:flex;align-items:stretch;gap:8px;height:186px}
+.chart-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;min-width:0}
+.chart-track{flex:1;display:flex;align-items:flex-end}
+.chart-bar{
+  width:100%;border-radius:7px;min-height:4px;
+  background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 45%,transparent));
+  transition:height .35s cubic-bezier(.4,0,.2,1),filter .15s;
+}
+.chart-col:hover .chart-bar{filter:brightness(1.12)}
+.chart-label{font-size:11px;color:var(--text-3);text-align:center;font-weight:600;letter-spacing:.02em}
+
+/* ============================================================
+   LISTS
+   ============================================================ */
+.list{display:flex;flex-direction:column;gap:9px}
+.list-item{
+  display:flex;align-items:center;gap:12px;padding:11px 12px;
+  border:1px solid var(--border);border-radius:12px;background:var(--surface-2);
+}
+.list-item .li-body{flex:1;min-width:0}
+.list-item .li-title{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item .li-sub{font-size:12px;color:var(--text-3)}
+.list-item .li-action{flex:none}
+.empty{
+  padding:34px 16px;text-align:center;color:var(--text-3);font-size:13.5px;
+  border:1px dashed var(--border-strong);border-radius:12px;
+}
+.empty .ic{width:26px;height:26px;display:block;margin:0 auto 8px;opacity:.55}
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{
+  text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--text-3);padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:var(--surface-2)}
+.cell-strong{font-weight:600}
+.cell-sub{font-size:12px;color:var(--text-3);margin-top:1px}
+.qty-input{
+  width:64px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;
+  background:var(--surface);text-align:center;outline:0;
+}
+.qty-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+.qty-input.invalid{border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+
+/* ============================================================
+   BADGES
+   ============================================================ */
+.badge{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;
+  font-size:11.5px;font-weight:650;white-space:nowrap;
+  background:var(--surface-3);color:var(--text-2);
+}
+.badge.ok{background:var(--green-soft);color:var(--green)}
+.badge.low{background:var(--amber-soft);color:var(--amber)}
+.badge.out{background:var(--red-soft);color:var(--red)}
+.badge.info{background:var(--blue-soft);color:var(--blue)}
+.badge.void{background:var(--surface-3);color:var(--text-3);text-decoration:line-through}
+.dot-sep{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.6}
+
+/* ============================================================
+   FORMS
+   ============================================================ */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field>span{font-size:12px;font-weight:650;color:var(--text-2)}
+.field input,.field select,.field textarea,.select,.input{
+  width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--text);outline:0;
+  transition:border-color .15s,box-shadow .15s,background .15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus,.select:focus,.input:focus{
+  border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring);
+}
+.field input:read-only{background:var(--surface-2);color:var(--text-2)}
+.field input::placeholder{color:var(--text-3)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+.form-row.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.form-row+.form-row{margin-top:12px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.toolbar .input-wrap{
+  display:flex;align-items:center;gap:8px;flex:1;min-width:180px;padding:8px 11px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text-3);
+}
+.toolbar .input-wrap input{flex:1;min-width:0;border:0;background:none;outline:0;color:var(--text)}
+.toolbar .input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring);background:var(--surface)}
+.toolbar .select{width:auto;min-width:140px}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{
+  width:30px;height:30px;border-radius:9px;border:2px solid transparent;
+  transition:transform .12s,border-color .12s;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+}
+.swatch:hover{transform:scale(1.08)}
+.swatch.active{border-color:var(--text);transform:scale(1.08)}
+.color-input{width:52px;height:36px;padding:2px;border:1px solid var(--border);border-radius:9px;background:var(--surface);cursor:pointer}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.chip{
+  padding:5px 11px;border-radius:99px;border:1px solid var(--border);background:var(--surface-2);
+  font-size:12.5px;font-weight:600;color:var(--text-2);
+}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+
+.item-row{display:grid;grid-template-columns:1fr 70px 100px 34px;gap:8px;align-items:end;margin-bottom:8px}
+.item-row .field>span{font-size:11px}
+.item-row input{padding:7px 9px;font-size:12.5px}
+
+/* ============================================================
+   SALE PAGE
+   ============================================================ */
+.sale-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:16px;align-items:start}
+.sale-side{position:sticky;top:84px;display:flex;flex-direction:column;gap:16px}
+.pay-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0}
+.pay-row+.pay-row{border-top:1px dashed var(--border)}
+.pay-row span{font-size:13px;color:var(--text-2)}
+.pay-row strong{font-size:16px;font-weight:750;letter-spacing:-.02em}
+.pay-row.total strong{font-size:20px}
+.pay-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin:12px 0}
+.remaining-ok{color:var(--green)!important}
+.remaining-bad{color:var(--red)!important}
+
+/* ============================================================
+   ATTENDANCE
+   ============================================================ */
+.attn-quick{display:inline-flex;gap:3px}
+.attn-quick button{
+  width:24px;height:24px;border-radius:6px;border:1px solid var(--border);
+  background:var(--surface);font-size:10px;font-weight:800;color:var(--text-3);
+  display:grid;place-items:center;transition:all .12s;
+}
+.attn-quick button:hover{border-color:var(--border-strong);color:var(--text)}
+.attn-quick button.active-p{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+.attn-quick button.active-a{background:var(--red-soft);color:var(--red);border-color:var(--red)}
+.attn-quick button.active-h{background:var(--amber-soft);color:var(--amber);border-color:var(--amber)}
+
+.attn-cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.attn-cal-head span{text-align:center;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em}
+.attn-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.attn-day{
+  aspect-ratio:1;display:grid;place-items:center;border-radius:8px;
+  border:1px solid var(--border);background:var(--surface-2);
+  font-size:12.5px;font-weight:600;cursor:pointer;
+  transition:transform .1s,background .1s;
+}
+.attn-day:hover:not(.empty):not(.disabled){transform:scale(1.06)}
+.attn-day.empty{visibility:hidden;pointer-events:none}
+.attn-day.present{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+.attn-day.absent{background:var(--red-soft);color:var(--red);border-color:var(--red)}
+.attn-day.half{background:var(--amber-soft);color:var(--amber);border-color:var(--amber)}
+.attn-day.today{box-shadow:0 0 0 2px var(--accent);border-color:var(--accent)}
+.attn-day.disabled{opacity:.3;cursor:not-allowed}
+
+.attn-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.attn-summary > div{padding:9px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);text-align:center}
+.attn-summary .val{font-size:16px;font-weight:750}
+.attn-summary .lbl{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.attn-summary .p .val{color:var(--green)}
+.attn-summary .a .val{color:var(--red)}
+.attn-summary .h .val{color:var(--amber)}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+.modal{
+  position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
+  padding:18px;background:rgba(9,13,25,.52);backdrop-filter:blur(3px);
+}
+.modal.open{display:flex}
+.modal-card{
+  width:min(660px,100%);max-height:88vh;overflow:auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:20px;box-shadow:var(--shadow-lg);animation:pop .18s ease;
+}
+.modal-card.sm{width:min(430px,100%)}
+.modal-card.wide{width:min(780px,100%)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.modal-head h2{font-size:17px;font-weight:750;letter-spacing:-.02em}
+.modal-foot{display:flex;justify-content:flex-end;gap:9px;margin-top:20px;flex-wrap:wrap}
+.modal-foot.split{justify-content:space-between}
+
+/* ============================================================
+   TOASTS
+   ============================================================ */
+#toasts{position:fixed;right:18px;bottom:18px;z-index:200;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{
+  display:flex;align-items:center;gap:10px;padding:11px 15px;
+  background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:12px;box-shadow:var(--shadow-md);font-size:13.5px;font-weight:550;
+  opacity:0;transform:translateY(10px);transition:opacity .22s,transform .22s;
+  max-width:min(360px,calc(100vw - 36px));pointer-events:auto;
+}
+.toast.show{opacity:1;transform:none}
+.toast.success{border-left-color:var(--green)}
+.toast.success .ic{color:var(--green)}
+.toast.error{border-left-color:var(--red)}
+.toast.error .ic{color:var(--red)}
+
+/* ============================================================
+   DENSITY
+   ============================================================ */
+html.density-compact .card{padding:13px}
+html.density-compact .stat{padding:12px 13px}
+html.density-compact thead th{padding:7px 10px}
+html.density-compact tbody td{padding:8px 10px}
+html.density-compact .content{padding:16px 20px 52px}
+html.density-compact .list-item{padding:8px 10px}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+.backdrop{
+  display:none;position:fixed;inset:0;background:rgba(9,13,25,.45);z-index:55;
+  backdrop-filter:blur(2px);animation:fade .2s ease;
+}
+
+@media(max-width:1180px){
+  .grid-2{grid-template-columns:1fr}
+  .grid-2.even{grid-template-columns:1fr}
+}
+@media(max-width:1020px){
+  .sale-grid{grid-template-columns:1fr}
+  .sale-side{position:static}
+}
+@media(max-width:960px){
+  .sidebar{transform:translateX(-100%);width:var(--sidebar-w)}
+  .main,html.layout-compact .main{margin-left:0}
+  html.layout-compact .sidebar{width:var(--sidebar-w)}
+  html.layout-compact .brand-text,html.layout-compact .nav-label{display:block}
+  html.layout-compact .brand{justify-content:flex-start;padding:16px}
+  html.layout-compact .nav-item{justify-content:flex-start;padding:9px 11px}
+  body.nav-open .sidebar{transform:none}
+  body.nav-open .backdrop{display:block}
+  .only-mobile{display:inline-grid}
+  .collapse-btn{display:none!important}
+  html.layout-topnav .sidebar{position:sticky;transform:none}
+  .content{padding:18px 16px 60px}
+  .topbar{padding:10px 14px;min-height:58px}
+}
+@media(max-width:640px){
+  .page-head h1{font-size:20px}
+  .stats{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  .form-row,.form-row.three,.form-row.four{grid-template-columns:1fr}
+  .pay-fields{grid-template-columns:1fr}
+  .search{max-width:none}
+  .search kbd{display:none}
+  .avatar{display:none}
+  .chart-bars{height:150px}
+  .modal-card{padding:16px;border-radius:16px}
+  .content{padding:16px 12px 60px}
+  .attn-summary{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== ICON SPRITE ==================== -->
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8.5v7a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 15.5v-7a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8.5Z"/><path d="m3.3 7.5 8.7 5 8.7-5"/><path d="M12 22v-9.5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M3.5 9.5 5 4h14l1.5 5.5"/><path d="M4 9.5V20h16V9.5"/><path d="M3 9.5h18"/><path d="M9.5 20v-5.5h5V20"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.5 12.5a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.6L21.5 7H6"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15v3"/><path d="M12 10v8"/><path d="M17 6v12"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 8 5-5 5 5"/><path d="M12 3v12"/></symbol>
+  <symbol id="i-import" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><circle cx="17" cy="14.5" r="1.1"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M17 7h4v4"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></symbol>
+  <symbol id="i-whatsapp" viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m0 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.82c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.19-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m-2.9 4.28c-.27 0-.7.1-1.07.5-.37.4-1.4 1.36-1.4 3.32 0 1.95 1.43 3.84 1.63 4.11.2.27 2.82 4.3 6.84 6.03.96.41 1.7.66 2.29.84.96.3 1.84.26 2.53.16.77-.11 2.38-.97 2.72-1.91.34-.94.34-1.75.24-1.92-.1-.17-.37-.27-.77-.47-.4-.2-2.38-1.17-2.75-1.31-.37-.13-.64-.2-.9.2-.27.4-1.04 1.31-1.27 1.58-.24.27-.47.3-.87.1-.4-.2-1.7-.63-3.24-2-.6-.54-1.62-1.64-1.83-2.1-.2-.47-.02-.72.18-.92.18-.18.4-.47.6-.7.2-.24.27-.4.4-.67.14-.27.07-.5-.03-.7-.1-.2-.9-2.2-1.23-3.01-.32-.79-.65-.68-.9-.69-.23-.01-.5-.01-.77-.01"/></symbol>
+</svg>
+
+<!-- ==================== APP ==================== -->
+<div class="app">
+
+  <!-- ---------- SIDEBAR ---------- -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <img class="brand-logo" src="{{ url_for('static', filename='DukaanDesk_Logo_Horizontal.png') }}" alt="Dukaan Desk">
+      <button class="icon-btn collapse-btn" id="collapseBtn" title="Collapse sidebar" aria-label="Collapse sidebar">
+        <svg class="ic"><use href="#i-menu"/></svg>
+      </button>
+    </div>
+    <nav class="nav" id="nav" aria-label="Sections">
+      <button class="nav-item active" data-page="dashboard"><svg class="ic"><use href="#i-grid"/></svg><span class="nav-label">Dashboard</span></button>
+      <button class="nav-item" data-page="inventory"><svg class="ic"><use href="#i-box"/></svg><span class="nav-label">Inventory</span></button>
+      <button class="nav-item" data-page="customers"><svg class="ic"><use href="#i-users"/></svg><span class="nav-label">Customers</span></button>
+      <button class="nav-item" data-page="suppliers"><svg class="ic"><use href="#i-store"/></svg><span class="nav-label">Suppliers</span></button>
+      <button class="nav-item" data-page="staff"><svg class="ic"><use href="#i-user"/></svg><span class="nav-label">Staff</span></button>
+      <button class="nav-item" data-page="sales"><svg class="ic"><use href="#i-cart"/></svg><span class="nav-label">New sale</span></button>
+      <button class="nav-item" data-page="reports"><svg class="ic"><use href="#i-chart"/></svg><span class="nav-label">Reports</span></button>
+      <button class="nav-item" data-page="finance"><svg class="ic"><use href="#i-wallet"/></svg><span class="nav-label">Finance</span></button>
+      <button class="nav-item" data-page="settings"><svg class="ic"><use href="#i-settings"/></svg><span class="nav-label">Settings</span></button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="shop-chip"><span class="dot"></span><span class="nav-label">Saved securely on this device</span></div>
+      <a class="nav-item" href="{{ url_for('account_settings') }}"><svg class="ic"><use href="#i-user"/></svg><span class="nav-label">Account settings</span></a>
+      {% if is_shop_owner %}
+      <a class="nav-item" href="{{ url_for('manage_accounts') }}"><svg class="ic"><use href="#i-users"/></svg><span class="nav-label">Manage accounts</span></a>
+      {% endif %}
+      <form action="{{ url_for('logout') }}" method="post">
+        <button class="nav-item" type="submit" aria-label="Sign out {{ shop_owner }}"><svg class="ic"><use href="#i-user"/></svg><span class="nav-label">Sign out</span></button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="backdrop" id="backdrop"></div>
+
+  <!-- ---------- MAIN ---------- -->
+  <div class="main">
+
+    <header class="topbar">
+      <button class="icon-btn only-mobile" id="drawerBtn" aria-label="Open menu">
+        <svg class="ic"><use href="#i-menu"/></svg>
+      </button>
+
+      <div class="search">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <input id="searchInput" type="search" placeholder="Search this page…" aria-label="Search this page">
+        <kbd>/</kbd>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">
+          <svg class="ic" id="themeIcon"><use href="#i-moon"/></svg>
+        </button>
+        <div class="notif-wrap">
+          <button class="icon-btn" id="bellBtn" title="Notifications" aria-label="Notifications">
+            <svg class="ic"><use href="#i-bell"/></svg>
+            <span class="badge-dot" id="notifCount" hidden>0</span>
+          </button>
+          <div class="popover" id="notifPopover">
+            <h3>Notifications</h3>
+            <div class="list" id="notifList"></div>
+          </div>
+        </div>
+        <div class="avatar" id="avatar" title="Shop">DD</div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ==================== DASHBOARD ==================== -->
+      <section class="page active" id="page-dashboard">
+        <div class="page-head">
+          <div>
+            <h1>Dashboard</h1>
+            <p class="muted"><span id="dashShop"></span> · <span id="dashToday"></span></p>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-ghost" data-go="finance"><svg class="ic"><use href="#i-wallet"/></svg>Finance</button>
+            <button class="btn btn-primary" data-go="sales"><svg class="ic"><use href="#i-plus"/></svg>New sale</button>
+          </div>
+        </div>
+
+        <div class="stats" id="dashStats"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h2>Revenue · last 7 days</h2><span class="muted small" id="chartTotal"></span></div>
+            <div class="chart-bars" id="revenueChart"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Quick actions</h2></div>
+            <div class="stack" style="gap:9px">
+              <button class="btn btn-primary" id="qaProduct"><svg class="ic"><use href="#i-plus"/></svg>Add product</button>
+              <button class="btn btn-ghost" id="qaCustomer"><svg class="ic"><use href="#i-users"/></svg>Add customer</button>
+              <button class="btn btn-ghost" id="qaStaff"><svg class="ic"><use href="#i-user"/></svg>Add staff</button>
+              <button class="btn btn-ghost" data-go="sales"><svg class="ic"><use href="#i-cart"/></svg>Record a sale</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h2>Recent sales</h2><button class="link" data-go="reports">View all</button></div>
+            <div id="recentSales"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Needs attention</h2></div>
+            <div class="list" id="lowStockList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== INVENTORY ==================== -->
+      <section class="page" id="page-inventory">
+        <div class="page-head">
+          <div><h1>Inventory</h1><p class="muted">Track stock levels, prices and reorder points.</p></div>
+          <button class="btn btn-primary" id="addProductBtn"><svg class="ic"><use href="#i-plus"/></svg>Add product</button>
+        </div>
+
+        <div class="stats" id="invStats"></div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="toolbar">
+            <select class="select" id="invCategory" aria-label="Filter by category"></select>
+            <select class="select" id="invStock" aria-label="Filter by stock state">
+              <option value="all">All stock</option>
+              <option value="low">Low stock</option>
+              <option value="out">Out of stock</option>
+            </select>
+          </div>
+          <div class="table-wrap" id="inventoryTable"></div>
+        </div>
+      </section>
+
+      <!-- ==================== CUSTOMERS ==================== -->
+      <section class="page" id="page-customers">
+        <div class="page-head">
+          <div><h1>Customers</h1><p class="muted">Balances, udhari and full transaction history.</p></div>
+          <button class="btn btn-primary" id="addCustomerBtn"><svg class="ic"><use href="#i-plus"/></svg>Add customer</button>
+        </div>
+
+        <div class="stats" id="custStats"></div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="table-wrap" id="customerTable"></div>
+        </div>
+      </section>
+
+      <!-- ==================== SUPPLIERS ==================== -->
+      <section class="page" id="page-suppliers">
+        <div class="page-head">
+          <div><h1>Suppliers</h1><p class="muted">Track purchases, payments and items bought from each supplier.</p></div>
+          <button class="btn btn-primary" id="addSupplierBtn"><svg class="ic"><use href="#i-plus"/></svg>Add supplier</button>
+        </div>
+
+        <div class="stats" id="supStats"></div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="table-wrap" id="supplierTable"></div>
+        </div>
+      </section>
+
+      <!-- ==================== STAFF ==================== -->
+      <section class="page" id="page-staff">
+        <div class="page-head">
+          <div><h1>Staff</h1><p class="muted">Team members, salaries and daily attendance.</p></div>
+          <button class="btn btn-primary" id="addStaffBtn"><svg class="ic"><use href="#i-plus"/></svg>Add staff</button>
+        </div>
+
+        <div class="stats" id="staffStats"></div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="card-head">
+            <h2>Team</h2>
+            <span class="muted small">Quick-mark today's attendance with P / A / H.</span>
+          </div>
+          <div class="table-wrap" id="staffTable"></div>
+        </div>
+      </section>
+
+      <!-- ==================== SALES ==================== -->
+      <section class="page" id="page-sales">
+        <div class="page-head">
+          <div><h1>New sale</h1><p class="muted">Add products, choose a customer and record the payment split.</p></div>
+          <button class="btn btn-ghost" id="clearCart"><svg class="ic"><use href="#i-refresh"/></svg>Clear cart</button>
+        </div>
+
+        <div class="sale-grid">
+          <div class="stack">
+
+            <div class="card">
+              <div class="card-title">1 · Add products</div>
+              <div class="form-row three">
+                <label class="field" style="grid-column:1 / -1">
+                  <span>Product</span>
+                  <input id="saleProduct" list="productList" placeholder="Search by name or code…" autocomplete="off">
+                  <datalist id="productList"></datalist>
+                </label>
+              </div>
+              <div class="form-row three" style="margin-top:12px">
+                <label class="field"><span>Quantity</span><input id="saleQty" type="number" min="1" step="1" value="1"></label>
+                <label class="field"><span>Price / piece</span><input id="salePrice" type="number" min="0" step="0.01" placeholder="0.00"></label>
+                <label class="field"><span>Line total</span><input id="saleLineTotal" readonly placeholder="—"></label>
+              </div>
+              <div class="btn-row" style="margin-top:12px;align-items:center">
+                <button class="btn btn-primary" id="addCartBtn"><svg class="ic"><use href="#i-plus"/></svg>Add to cart</button>
+                <span class="muted small" id="stockHint"></span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><h2>2 · Cart</h2><span class="muted small" id="cartCount"></span></div>
+              <div id="cartBody"></div>
+            </div>
+
+          </div>
+
+          <div class="sale-side">
+
+            <div class="card">
+              <div class="card-title">3 · Customer</div>
+              <label class="field"><span>Name</span><input id="saleCustomerName" list="customerList" placeholder="Walk-in customer" autocomplete="off"><datalist id="customerList"></datalist></label>
+              <label class="field" style="margin-top:10px"><span>Phone</span><input id="saleCustomerPhone" inputmode="tel" placeholder="Optional unless udhari"></label>
+              <label class="field" style="margin-top:10px"><span>Note</span><input id="saleNote" placeholder="Optional note for this sale"></label>
+              <p class="muted small" id="customerHint" style="margin-top:8px"></p>
+            </div>
+
+            <div class="card">
+              <div class="card-title">4 · Payment</div>
+
+              <div class="pay-row total"><span>Cart total</span><strong id="saleTotal">₹0.00</strong></div>
+
+              <div class="pay-fields">
+                <label class="field"><span>Cash</span><input id="payCash" type="number" min="0" step="0.01" placeholder="0.00"></label>
+                <label class="field"><span>Online</span><input id="payOnline" type="number" min="0" step="0.01" placeholder="0.00"></label>
+                <label class="field"><span>Udhari</span><input id="payCredit" type="number" min="0" step="0.01" placeholder="0.00"></label>
+              </div>
+
+              <div class="pay-row"><span>Remaining</span><strong id="saleRemaining">₹0.00</strong></div>
+
+              <div class="btn-row" style="margin-top:6px">
+                <button class="btn btn-ghost sm" id="fillRemaining">Fill remaining → cash</button>
+              </div>
+
+              <hr class="hr">
+
+              <button class="btn btn-success" id="completeSale" style="width:100%" disabled>
+                <svg class="ic"><use href="#i-check"/></svg>Complete sale
+              </button>
+              <p class="small muted" id="saleMsg" style="margin-top:10px"></p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== REPORTS ==================== -->
+      <section class="page" id="page-reports">
+        <div class="page-head">
+          <div><h1>Reports</h1><p class="muted">Every recorded sale, with payment split.</p></div>
+          <div class="head-actions">
+            <select class="select" id="repRange" style="width:auto">
+              <option value="today">Today</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="all" selected>All time</option>
+            </select>
+            <button class="btn btn-ghost" id="exportCsv"><svg class="ic"><use href="#i-export"/></svg>Export CSV</button>
+          </div>
+        </div>
+
+        <div class="stats" id="repStats"></div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="table-wrap" id="repTable"></div>
+        </div>
+      </section>
+
+      <!-- ==================== FINANCE ==================== -->
+      <section class="page" id="page-finance">
+        <div class="page-head">
+          <div><h1>Finance</h1><p class="muted">Revenue, purchases, salaries, profit and cash flow.</p></div>
+          <div class="head-actions">
+            <select class="select" id="finRange" style="width:auto">
+              <option value="all" selected>All time</option>
+              <option value="30">Last 30 days</option>
+              <option value="7">Last 7 days</option>
+              <option value="today">Today</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="stats" id="finStats"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h2>Profit & loss</h2></div>
+            <div id="finBreakdown"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Balances</h2></div>
+            <div id="finBalances"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="card-head"><h2>All financial transactions</h2></div>
+          <div class="table-wrap" id="finTable"></div>
+        </div>
+      </section>
+
+      <!-- ==================== SETTINGS ==================== -->
+      <section class="page" id="page-settings">
+        <div class="page-head">
+          <div><h1>Settings</h1><p class="muted">Appearance and data preferences for this account.</p></div>
+        </div>
+
+        <div class="grid-2 even">
+          <div class="card">
+            <h2 class="card-title">Appearance</h2>
+
+            <label class="field">
+              <span>Theme</span>
+              <select class="select" id="themeSelect">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="system">Match system</option>
+              </select>
+            </label>
+
+            <div class="field" style="margin-top:14px">
+              <span>Accent color</span>
+              <div class="swatches" id="accentSwatches"></div>
+            </div>
+
+            <label class="field" style="margin-top:14px">
+              <span>Custom accent</span>
+              <input class="color-input" type="color" id="accentColor">
+            </label>
+
+            <div class="form-row" style="margin-top:14px">
+              <label class="field">
+                <span>Navigation layout</span>
+                <select class="select" id="layoutSelect">
+                  <option value="expanded">Sidebar</option>
+                  <option value="compact">Compact sidebar</option>
+                  <option value="topnav">Top navigation</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Density</span>
+                <select class="select" id="densitySelect">
+                  <option value="comfortable">Comfortable</option>
+                  <option value="compact">Compact</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Shop profile</h2>
+
+            <label class="field"><span>Shop name</span><input id="shopNameInput" maxlength="40"></label>
+            <label class="field" style="margin-top:14px"><span>Currency symbol</span><input id="currencyInput" maxlength="3"></label>
+
+            <hr class="hr">
+
+            <h2 class="card-title">Data</h2>
+            <div class="btn-row">
+              <button class="btn btn-ghost" id="exportData"><svg class="ic"><use href="#i-export"/></svg>Export JSON</button>
+              <button class="btn btn-ghost" id="importData"><svg class="ic"><use href="#i-import"/></svg>Import JSON</button>
+              <input type="file" id="importFile" accept="application/json" hidden>
+            </div>
+            <div class="btn-row" style="margin-top:10px">
+              <button class="btn btn-ghost" id="resetAppearance"><svg class="ic"><use href="#i-refresh"/></svg>Reset appearance</button>
+            </div>
+
+            <p class="muted small" style="margin-top:14px">Shop records are encrypted and saved to this account on this device.</p>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Local accounts</h2>
+            <div class="btn-row">
+              <a class="btn btn-ghost" href="{{ url_for('account_settings') }}">Account settings</a>
+              {% if is_shop_owner %}
+              <a class="btn btn-ghost" href="{{ url_for('manage_accounts') }}">Manage accounts</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Product -->
+<div class="modal" id="productModal" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="productModalTitle">Add product</h2>
+      <button class="icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+    <form id="productForm">
+      <input type="hidden" id="productId">
+      <div class="form-row">
+        <label class="field"><span>Product name</span><input id="pName" maxlength="80" required></label>
+        <label class="field"><span>Category</span><input id="pCategory" list="categoryOptions" maxlength="40" placeholder="e.g. Stationery"><datalist id="categoryOptions"></datalist></label>
+      </div>
+      <div class="form-row four" style="margin-top:12px">
+        <label class="field"><span>Cost price / piece</span><input id="pCost" type="number" min="0" step="0.01" required></label>
+        <label class="field"><span>Selling price</span><input id="pPrice" type="number" min="0" step="0.01" required></label>
+        <label class="field"><span>Stock quantity</span><input id="pQty" type="number" min="0" step="1" required value="0"></label>
+        <label class="field"><span>Reorder level</span><input id="pMin" type="number" min="0" step="1" required value="5"></label>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Customer -->
+<div class="modal" id="customerModal" role="dialog" aria-modal="true" aria-labelledby="customerModalTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="customerModalTitle">Add customer</h2>
+      <button class="icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+
+    <form id="customerForm">
+      <input type="hidden" id="customerId">
+      <div class="form-row">
+        <label class="field"><span>Name</span><input id="cName" maxlength="60" required></label>
+        <label class="field"><span>Phone</span><input id="cPhone" inputmode="tel" maxlength="20" required></label>
+      </div>
+
+      <div class="stats" id="customerSummary" style="margin-top:14px;grid-template-columns:1fr 1fr"></div>
+
+      <div class="form-row" style="margin-top:14px">
+        <label class="field"><span>Amount</span><input id="cAmount" type="number" min="0" step="0.01" placeholder="0.00"></label>
+        <label class="field"><span>Type</span>
+          <select class="select" id="cType">
+            <option value="GAVE">Gave (added to udhari)</option>
+            <option value="GOT">Got (payment received)</option>
+          </select>
+        </label>
+      </div>
+      <label class="field" style="margin-top:12px"><span>Note</span><input id="cNote" maxlength="80" placeholder="Optional"></label>
+
+      <div class="modal-foot split">
+        <div class="btn-row">
+          <button type="button" class="btn btn-danger" id="deleteCustomerBtn" hidden><svg class="ic"><use href="#i-trash"/></svg>Delete</button>
+          <button type="button" class="btn btn-ghost" id="settleBtn" hidden><svg class="ic"><use href="#i-check"/></svg>Settle balance</button>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+
+    <div id="customerLedger" style="margin-top:18px"></div>
+  </div>
+</div>
+
+<!-- Supplier -->
+<div class="modal" id="supplierModal" role="dialog" aria-modal="true" aria-labelledby="supplierModalTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="supplierModalTitle">Add supplier</h2>
+      <button class="icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+
+    <form id="supplierForm">
+      <input type="hidden" id="supplierId">
+      <div class="form-row">
+        <label class="field"><span>Supplier name</span><input id="sName" maxlength="60" required></label>
+        <label class="field"><span>Phone</span><input id="sPhone" inputmode="tel" maxlength="20" required></label>
+      </div>
+
+      <div class="stats" id="supplierSummary" style="margin-top:14px;grid-template-columns:1fr 1fr 1fr"></div>
+
+      <div class="modal-foot split">
+        <div class="btn-row">
+          <button type="button" class="btn btn-danger" id="deleteSupplierBtn" hidden><svg class="ic"><use href="#i-trash"/></svg>Delete</button>
+        </div>
+        <button type="submit" class="btn btn-primary">Save supplier</button>
+      </div>
+    </form>
+
+    <hr class="hr">
+
+    <div id="supplierTxnSection" hidden>
+      <h3 class="card-title">Record transaction</h3>
+      <div class="form-row">
+        <label class="field"><span>Type</span>
+          <select class="select" id="supplierTxnType">
+            <option value="PURCHASE">Purchase (we bought goods)</option>
+            <option value="PAYMENT">Payment (we paid supplier)</option>
+          </select>
+        </label>
+        <label class="field"><span>Amount</span><input id="supplierTxnAmount" type="number" min="0" step="0.01" placeholder="0.00"></label>
+      </div>
+      <label class="field" style="margin-top:12px"><span>Note</span><input id="supplierTxnNote" maxlength="80" placeholder="Optional"></label>
+
+      <div id="supplierItemsBuilder" style="margin-top:14px">
+        <div class="card-head"><h4 style="font-size:13px">Items purchased (optional)</h4><button type="button" class="btn btn-ghost sm" id="addSupplierItemBtn"><svg class="ic"><use href="#i-plus"/></svg>Add item</button></div>
+        <div id="supplierItemRows"></div>
+        <div class="pay-row" style="margin-top:8px"><span>Items total</span><strong id="supplierItemsTotal">₹0.00</strong></div>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" id="addSupplierTxnBtn">Add transaction</button>
+      </div>
+    </div>
+
+    <div id="supplierLedger" style="margin-top:18px"></div>
+    <div id="supplierItemsPurchased" style="margin-top:18px"></div>
+  </div>
+</div>
+
+<!-- Staff -->
+<div class="modal" id="staffModal" role="dialog" aria-modal="true" aria-labelledby="staffModalTitle">
+  <div class="modal-card wide">
+    <div class="modal-head">
+      <h2 id="staffModalTitle">Add staff</h2>
+      <button class="icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+
+    <form id="staffForm">
+      <input type="hidden" id="staffId">
+      <div class="form-row">
+        <label class="field"><span>Name</span><input id="stName" maxlength="60" required></label>
+        <label class="field"><span>Phone</span><input id="stPhone" inputmode="tel" maxlength="20"></label>
+      </div>
+      <div class="form-row three" style="margin-top:12px">
+        <label class="field"><span>Role</span><input id="stRole" maxlength="40" placeholder="e.g. Helper"></label>
+        <label class="field"><span>Monthly salary</span><input id="stSalary" type="number" min="0" step="0.01" required></label>
+        <label class="field"><span>Joining date</span><input id="stJoinDate" type="date" required></label>
+      </div>
+
+      <div class="modal-foot split">
+        <div class="btn-row">
+          <button type="button" class="btn btn-danger" id="deleteStaffBtn" hidden><svg class="ic"><use href="#i-trash"/></svg>Delete</button>
+        </div>
+        <button type="submit" class="btn btn-primary">Save staff</button>
+      </div>
+    </form>
+
+    <div id="staffDetail" hidden>
+      <hr class="hr">
+      <div id="staffMonthlyPayroll"></div>
+
+      <hr class="hr">
+
+      <div class="card-head">
+        <h3 style="font-size:14px;margin:0">Attendance · <span id="attnMonthLabel"></span></h3>
+        <div class="btn-row">
+          <button type="button" class="btn btn-ghost sm" id="attnPrevMonth" aria-label="Previous month">←</button>
+          <button type="button" class="btn btn-ghost sm" id="attnNextMonth" aria-label="Next month">→</button>
+        </div>
+      </div>
+      <div id="attnCalendar"></div>
+      <p class="small muted" style="margin-top:10px">Click a day to cycle: unmarked → present → absent → half → unmarked. Unmarked days default to present.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Restock -->
+<div class="modal" id="restockModal" role="dialog" aria-modal="true" aria-labelledby="restockTitle">
+  <div class="modal-card sm">
+    <div class="modal-head">
+      <h2 id="restockTitle">Restock product</h2>
+      <button class="icon-btn" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+    <p class="muted small" id="restockInfo" style="margin-bottom:14px"></p>
+    <label class="field"><span>Quantity to add</span><input id="restockQty" type="number" min="1" step="1" value="10"></label>
+    <div class="chips" id="restockChips">
+      <button type="button" class="chip" data-amt="5">+5</button>
+      <button type="button" class="chip" data-amt="10">+10</button>
+      <button type="button" class="chip" data-amt="25">+25</button>
+      <button type="button" class="chip" data-amt="50">+50</button>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+      <button type="button" class="btn btn-primary" id="restockConfirm">Add stock</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="modal-card sm">
+    <div class="modal-head"><h2 id="confirmTitle">Confirm</h2></div>
+    <p class="muted" id="confirmMessage"></p>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" id="confirmCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="confirmOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+  window.DUKAANDESK_INITIAL_WORKSPACE = {{ initial_workspace|tojson }};
+  window.DUKAANDESK_INITIAL_SETTINGS = {{ initial_settings|tojson }};
+</script>
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     CONSTANTS
+     ============================================================ */
+  const DAY = 86400000;
+
+  const DEFAULT_SETTINGS = {
+    theme: 'system',
+    accent: '#4f46e5',
+    layout: 'expanded',
+    density: 'comfortable',
+    shopName: 'My Shop',
+    currency: '₹'
+  };
+
+  const ACCENTS = ['#4f46e5', '#2563eb', '#0d9488', '#16a34a', '#d97706', '#e11d48', '#7c3aed', '#0f172a'];
+
+  /* ============================================================
+     UTILITIES
+     ============================================================ */
+  const $  = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const uid = (prefix = 'id') => prefix + '_' + Math.random().toString(36).slice(2, 9);
+
+  const num = (v) => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+  const fmtNum = (n) => Number(n || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  });
+
+  const money = (n) => settings.currency + fmtNum(n);
+
+  const fmtDate = (iso) => new Date(iso).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+
+  const fmtShort = (iso) => new Date(iso).toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'short'
+  });
+
+  const todayLabel = () => new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+
+  const startOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+
+  const dayKey = (d) => {
+    const x = new Date(d);
+    return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+  };
+
+  const todayKey = () => dayKey(new Date());
+
+  const isoToDayKey = (iso) => iso ? String(iso).slice(0, 10) : '';
+
+  /* ============================================================
+     STATE
+     ============================================================ */
+  function loadData() {
+    const data = window.DUKAANDESK_INITIAL_WORKSPACE;
+    if (!data || !['products', 'customers', 'suppliers', 'staff', 'sales'].every((key) => Array.isArray(data[key]))) {
+      throw new Error('The saved shop data could not be loaded.');
+    }
+    return {
+      products: data.products,
+      customers: data.customers,
+      suppliers: data.suppliers,
+      staff: data.staff,
+      sales: data.sales
+    };
+  }
+
+  function loadSettings() {
+    const saved = window.DUKAANDESK_INITIAL_SETTINGS;
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) {
+      throw new Error('The saved appearance settings could not be loaded.');
+    }
+    return Object.assign({}, DEFAULT_SETTINGS, saved);
+  }
+
+  let state = loadData();
+  let settings = loadSettings();
+
+  let cart = [];
+  let payDirty = false;
+  let currentPage = 'dashboard';
+  let searchQuery = '';
+  let restockTarget = null;
+  let confirmResolve = null;
+  let currentStaffId = null;
+  let attnCursor = { year: new Date().getFullYear(), month: new Date().getMonth() };
+
+  let dataSaveQueue = Promise.resolve();
+  let settingsSaveQueue = Promise.resolve();
+
+  function persist() {
+    const snapshot = JSON.stringify(state);
+    dataSaveQueue = dataSaveQueue.then(async () => {
+      const response = await fetch('/api/workspace/data', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: snapshot
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'The shop data could not be saved.');
+      }
+    }).catch((err) => {
+      toast('Could not save data: ' + err.message, 'error');
+      return false;
+    });
+    return dataSaveQueue;
+  }
+
+  function persistSettings() {
+    const snapshot = JSON.stringify(settings);
+    settingsSaveQueue = settingsSaveQueue.then(async () => {
+      const response = await fetch('/api/workspace/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: snapshot
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Appearance settings could not be saved.');
+      }
+    }).catch((err) => {
+      toast('Could not save settings: ' + err.message, 'error');
+      return false;
+    });
+    return settingsSaveQueue;
+  }
+
+  function save() { persist(); renderAll(); }
+
+  /* ============================================================
+     TOASTS
+     ============================================================ */
+  function toast(message, type = 'success') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    const iconId = type === 'error' ? 'i-alert' : type === 'info' ? 'i-info' : 'i-check';
+    el.innerHTML = '<svg class="ic"><use href="#' + iconId + '"/></svg><span>' + esc(message) + '</span>';
+    $('#toasts').appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => el.remove(), 260);
+    }, 3200);
+  }
+
+  /* ============================================================
+     MODALS
+     ============================================================ */
+  function openModal(sel) {
+    $(sel).classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+
+  function closeModalEl(m) {
+    if (!m) return;
+    m.classList.remove('open');
+    if (m.id === 'confirmModal' && confirmResolve) {
+      const r = confirmResolve;
+      confirmResolve = null;
+      r(false);
+    }
+    if (!document.querySelector('.modal.open')) {
+      document.body.classList.remove('modal-open');
+    }
+  }
+
+  function closeModal(sel) { closeModalEl($(sel)); }
+
+  function confirmDialog(opts) {
+    return new Promise((resolve) => {
+      confirmResolve = resolve;
+      $('#confirmTitle').textContent = opts.title || 'Are you sure?';
+      $('#confirmMessage').textContent = opts.message || '';
+      $('#confirmOk').textContent = opts.confirmText || 'Confirm';
+      $('#confirmOk').className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-primary');
+      openModal('#confirmModal');
+    });
+  }
+
+  /* ============================================================
+     SETTINGS / THEME
+     ============================================================ */
+  function effectiveTheme() {
+    if (settings.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return settings.theme;
+  }
+
+  function applySettings() {
+    const theme = effectiveTheme();
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.setProperty('--accent', settings.accent);
+
+    const root = document.documentElement;
+    root.classList.toggle('layout-compact', settings.layout === 'compact');
+    root.classList.toggle('layout-topnav', settings.layout === 'topnav');
+    root.classList.toggle('density-compact', settings.density === 'compact');
+
+    $('#themeIcon').innerHTML = '<use href="#' + (theme === 'dark' ? 'i-sun' : 'i-moon') + '"/>';
+    $('#dashShop').textContent = settings.shopName || 'My Shop';
+    $('#avatar').textContent = initials(settings.shopName || 'DD');
+
+    $('#themeSelect').value = settings.theme;
+    $('#accentColor').value = settings.accent;
+    $('#layoutSelect').value = settings.layout;
+    $('#densitySelect').value = settings.density;
+    $('#shopNameInput').value = settings.shopName;
+    $('#currencyInput').value = settings.currency;
+
+    $$('#accentSwatches .swatch').forEach((b) => {
+      b.classList.toggle('active', b.dataset.color.toLowerCase() === settings.accent.toLowerCase());
+    });
+  }
+
+  function initials(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'DD';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  function buildSwatches() {
+    const wrap = $('#accentSwatches');
+    wrap.innerHTML = ACCENTS.map((c) =>
+      '<button type="button" class="swatch" data-color="' + c + '" style="background:' + c + '" aria-label="Accent ' + c + '"></button>'
+    ).join('');
+    wrap.addEventListener('click', (e) => {
+      const btn = e.target.closest('.swatch');
+      if (!btn) return;
+      settings.accent = btn.dataset.color;
+      persistSettings();
+      applySettings();
+    });
+  }
+
+  /* ============================================================
+     DERIVED HELPERS
+     ============================================================ */
+  const activeSales = () => state.sales.filter((s) => !s.voided);
+  const lowStockProducts = () => state.products.filter((p) => p.quantity <= p.minimum);
+  const outOfStockProducts = () => state.products.filter((p) => p.quantity <= 0);
+
+  function totalRevenue() {
+    return activeSales().reduce((sum, s) => sum + s.total, 0);
+  }
+
+  function costOfSale(sale) {
+    return sale.items.reduce((sum, item) => {
+      const savedCost = item.cost;
+      const product = state.products.find((p) => p.id === item.productId);
+      const unitCost = typeof savedCost === 'number' && Number.isFinite(savedCost)
+        ? savedCost
+        : (product ? num(product.cost) : 0);
+      return sum + item.qty * unitCost;
+    }, 0);
+  }
+
+  function totalCostOfGoodsSold(sales) {
+    return round2(sales.reduce((sum, sale) => sum + costOfSale(sale), 0));
+  }
+
+  function totalOutstanding() {
+    return state.customers.reduce((sum, c) => sum + Math.max(0, c.balance), 0);
+  }
+
+  function totalPurchases() {
+    return state.suppliers.reduce((sum, s) =>
+      sum + s.transactions.filter(t => t.type === 'PURCHASE').reduce((a, t) => a + t.amount, 0), 0);
+  }
+
+  function monthlySalaryBill() {
+    return state.staff.reduce((sum, s) => sum + (s.salary || 0), 0);
+  }
+
+  function nextInvoiceNo() {
+    const nums = state.sales.map((s) => parseInt(String(s.id).replace(/\D/g, ''), 10) || 0);
+    const next = (nums.length ? Math.max.apply(null, nums) : 0) + 1;
+    return 'INV-' + String(next).padStart(4, '0');
+  }
+
+  function nextProductCode() {
+    const nums = state.products.map((p) => parseInt(String(p.code).replace(/\D/g, ''), 10) || 100);
+    const next = (nums.length ? Math.max.apply(null, nums) : 100) + 1;
+    return 'DD-' + next;
+  }
+
+  function stockState(p) {
+    if (p.quantity <= 0) return 'out';
+    if (p.quantity <= p.minimum) return 'low';
+    return 'ok';
+  }
+
+  function stockBadge(p) {
+    const s = stockState(p);
+    if (s === 'out') return '<span class="badge out">Out of stock</span>';
+    if (s === 'low') return '<span class="badge low">Low · ' + p.quantity + ' left</span>';
+    return '<span class="badge ok">' + p.quantity + ' in stock</span>';
+  }
+
+  function periodStart(range) {
+    const now = new Date();
+    if (range === 'today') return startOfDay(now).getTime();
+    if (range === '7') return startOfDay(now).getTime() - 6 * DAY;
+    if (range === '30') return startOfDay(now).getTime() - 29 * DAY;
+    return 0;
+  }
+
+  /* ============================================================
+     SUPPLIER HELPERS
+     ============================================================ */
+  function supplierBalance(supplier) {
+    return round2(supplier.transactions.reduce((sum, t) => {
+      if (t.type === 'PURCHASE') return sum + t.amount;
+      if (t.type === 'PAYMENT') return sum - t.amount;
+      return sum;
+    }, 0));
+  }
+
+  function supplierItemCount(supplier) {
+    return supplier.transactions
+      .filter((t) => t.type === 'PURCHASE' && Array.isArray(t.items))
+      .reduce((sum, t) => sum + t.items.length, 0);
+  }
+
+  function supplierPurchasesTotal(supplier) {
+    return supplier.transactions
+      .filter((t) => t.type === 'PURCHASE')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }
+
+  function supplierPaymentsTotal(supplier) {
+    return supplier.transactions
+      .filter((t) => t.type === 'PAYMENT')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }
+
+  function allSupplierItems(supplier) {
+    const rows = [];
+    supplier.transactions
+      .filter((t) => t.type === 'PURCHASE' && Array.isArray(t.items))
+      .forEach((t) => {
+        t.items.forEach((item) => {
+          rows.push({
+            date: t.date, name: item.name, qty: item.qty,
+            cost: item.cost, total: round2(item.qty * item.cost)
+          });
+        });
+      });
+    return rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+
+  function buildWhatsAppLink(customer) {
+    let digits = String(customer.phone || '').replace(/\D/g, '');
+    if (digits.length === 10) digits = '91' + digits;
+    const text = 'Hello ' + customer.name + ', this is ' + (settings.shopName || 'our shop') +
+      '. Your outstanding balance is ' + money(customer.balance) + '. Please clear it at your convenience.';
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(text);
+  }
+
+  /* ============================================================
+     STAFF / SALARY HELPERS
+     ============================================================ */
+  function computeSalaryAccrual(staff, fromMs, toMs) {
+    if (!staff.salary || staff.salary <= 0) return 0;
+    if (!staff.joinDate) return 0;
+
+    const joinMs = new Date(staff.joinDate + 'T00:00:00').getTime();
+    const startMs = Math.max(joinMs, fromMs);
+    const endMs = Math.min(Date.now(), toMs);
+    if (startMs > endMs) return 0;
+
+    let total = 0;
+    const startDate = new Date(startMs);
+    const endDate = new Date(endMs);
+
+    let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+    while (cursor <= end) {
+      const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+      const dailyRate = staff.salary / daysInMonth;
+      const key = dayKey(cursor);
+      const status = staff.attendance?.[key];
+
+      if (status === 'absent') {
+        // no pay
+      } else if (status === 'half') {
+        total += dailyRate * 0.5;
+      } else {
+        total += dailyRate;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return round2(total);
+  }
+
+  function computeMonthlyPayroll(staff) {
+    const months = [];
+    if (!staff.joinDate || !staff.salary) return months;
+
+    const joinDate = new Date(staff.joinDate + 'T00:00:00');
+    const today = new Date();
+
+    let cursor = new Date(joinDate.getFullYear(), joinDate.getMonth(), 1);
+    const end = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    while (cursor <= end) {
+      const y = cursor.getFullYear();
+      const m = cursor.getMonth();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const dailyRate = staff.salary / daysInMonth;
+
+      let startDay = 1;
+      let endDay = daysInMonth;
+      if (y === joinDate.getFullYear() && m === joinDate.getMonth()) startDay = joinDate.getDate();
+      if (y === today.getFullYear() && m === today.getMonth()) endDay = today.getDate();
+
+      let present = 0, absent = 0, half = 0, unmarked = 0;
+      let amount = 0;
+
+      for (let d = startDay; d <= endDay; d++) {
+        const key = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+        const status = staff.attendance?.[key];
+        if (status === 'present') { present++; amount += dailyRate; }
+        else if (status === 'absent') { absent++; }
+        else if (status === 'half') { half++; amount += dailyRate * 0.5; }
+        else { unmarked++; amount += dailyRate; }
+      }
+
+      months.push({
+        key: y + '-' + String(m + 1).padStart(2, '0'),
+        label: new Date(y, m, 1).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
+        daysInMonth, startDay, endDay,
+        present, absent, half, unmarked,
+        amount: round2(amount),
+        isCurrent: y === today.getFullYear() && m === today.getMonth()
+      });
+
+      cursor = new Date(y, m + 1, 1);
+    }
+
+    return months.reverse();
+  }
+
+  function currentMonthPayroll(staff) {
+    const monthly = computeMonthlyPayroll(staff);
+    return monthly[0]?.amount || 0;
+  }
+
+  function totalSalaryInPeriod(fromMs, toMs) {
+    return round2(state.staff.reduce((sum, st) => sum + computeSalaryAccrual(st, fromMs, toMs), 0));
+  }
+
+  function todayAttendanceCount() {
+    const key = todayKey();
+    const counts = { present: 0, absent: 0, half: 0, unmarked: 0 };
+    state.staff.forEach(st => {
+      const s = st.attendance?.[key];
+      if (s === 'present') counts.present++;
+      else if (s === 'absent') counts.absent++;
+      else if (s === 'half') counts.half++;
+      else counts.unmarked++;
+    });
+    return counts;
+  }
+
+  /* ============================================================
+     NAVIGATION
+     ============================================================ */
+  function navigate(page) {
+    currentPage = page;
+    $$('.page').forEach((p) => p.classList.toggle('active', p.id === 'page-' + page));
+    $$('.nav-item').forEach((b) => b.classList.toggle('active', b.dataset.page === page));
+
+    searchQuery = '';
+    $('#searchInput').value = '';
+    applySearch();
+
+    document.body.classList.remove('nav-open');
+    $('#notifPopover').classList.remove('open');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (page === 'reports') renderReports();
+    if (page === 'finance') renderFinance();
+  }
+
+  /* ============================================================
+     SEARCH
+     ============================================================ */
+  function applySearch() {
+    const q = searchQuery.trim().toLowerCase();
+    const page = document.querySelector('.page.active');
+    if (!page) return;
+    page.querySelectorAll('tbody tr').forEach((tr) => {
+      tr.hidden = !!q && !tr.textContent.toLowerCase().includes(q);
+    });
+    page.querySelectorAll('.list-item').forEach((li) => {
+      li.hidden = !!q && !li.textContent.toLowerCase().includes(q);
+    });
+  }
+
+  /* ============================================================
+     RENDER · DASHBOARD
+     ============================================================ */
+  function renderDashboard() {
+    const revenue = totalRevenue();
+    const salesCount = activeSales().length;
+    const units = state.products.reduce((s, p) => s + p.quantity, 0);
+    const lowCount = lowStockProducts().length;
+    const purchases = totalPurchases();
+    const grossProfit = round2(revenue - totalCostOfGoodsSold(activeSales()));
+
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+    const mtdSalary = totalSalaryInPeriod(monthStart, Date.now());
+    const monthlyBill = monthlySalaryBill();
+
+    const todayStart = startOfDay(new Date()).getTime();
+    const todayRevenue = activeSales()
+      .filter((s) => new Date(s.date).getTime() >= todayStart)
+      .reduce((sum, s) => sum + s.total, 0);
+
+    $('#dashToday').textContent = todayLabel();
+
+    const stats = [
+      { label: 'Revenue', value: money(revenue), icon: 'i-trend', tone: 'green', sub: money(todayRevenue) + ' today' },
+      { label: 'Purchases', value: money(purchases), icon: 'i-store', tone: 'red', sub: 'Spent on stock' },
+      { label: 'Gross profit', value: money(grossProfit), icon: 'i-wallet', tone: grossProfit >= 0 ? 'green' : 'red', sub: 'Revenue − cost of items sold' },
+      { label: 'Salaries (MTD)', value: money(mtdSalary), icon: 'i-user', tone: 'amber', sub: money(monthlyBill) + ' monthly bill' },
+      { label: 'Sales', value: String(salesCount), icon: 'i-receipt', tone: 'blue', sub: activeSales().reduce((s, x) => s + x.items.reduce((a, i) => a + i.qty, 0), 0) + ' items' },
+      { label: 'Products', value: String(state.products.length), icon: 'i-box', tone: '', sub: units + ' units' },
+      { label: 'Low stock', value: String(lowCount), icon: 'i-alert', tone: lowCount ? 'amber' : 'green', sub: lowCount ? 'Needs restocking' : 'All healthy' },
+      { label: 'Outstanding', value: money(totalOutstanding()), icon: 'i-wallet', tone: totalOutstanding() ? 'red' : 'green', sub: 'Udhari to collect' }
+    ];
+
+    $('#dashStats').innerHTML = stats.map((s) =>
+      '<div class="stat">' +
+        '<div class="stat-top">' +
+          '<span class="stat-label">' + esc(s.label) + '</span>' +
+          '<span class="stat-icon ' + s.tone + '"><svg class="ic"><use href="#' + s.icon + '"/></svg></span>' +
+        '</div>' +
+        '<div class="stat-value">' + esc(s.value) + '</div>' +
+        '<div class="stat-sub">' + esc(s.sub) + '</div>' +
+      '</div>'
+    ).join('');
+
+    renderChart();
+    renderRecentSales();
+    renderLowStock();
+  }
+
+  function renderChart() {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = startOfDay(new Date());
+      d.setDate(d.getDate() - i);
+      days.push(d);
+    }
+
+    const buckets = days.map(() => 0);
+    activeSales().forEach((s) => {
+      const t = new Date(s.date).getTime();
+      days.forEach((d, i) => {
+        if (t >= d.getTime() && t < d.getTime() + DAY) buckets[i] += s.total;
+      });
+    });
+
+    const max = Math.max.apply(null, buckets.concat([1]));
+    const total = buckets.reduce((a, b) => a + b, 0);
+
+    $('#chartTotal').textContent = money(total) + ' total';
+
+    $('#revenueChart').innerHTML = days.map((d, i) => {
+      const pct = Math.max(3, (buckets[i] / max) * 100);
+      const label = d.toLocaleDateString('en-IN', { weekday: 'short' });
+      const title = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' · ' + money(buckets[i]);
+      return '<div class="chart-col" title="' + esc(title) + '">' +
+        '<div class="chart-track"><div class="chart-bar" style="height:' + pct.toFixed(1) + '%"></div></div>' +
+        '<span class="chart-label">' + esc(label) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderRecentSales() {
+    const recent = activeSales().slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+    const host = $('#recentSales');
+
+    if (!recent.length) {
+      host.innerHTML = '<div class="empty"><svg class="ic"><use href="#i-receipt"/></svg>No sales recorded yet.</div>';
+      return;
+    }
+
+    host.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+      '<th>Invoice</th><th>Customer</th><th>Payment</th><th class="right">Total</th>' +
+      '</tr></thead><tbody>' +
+      recent.map((s) => {
+        const pay = [
+          s.cash > 0 ? 'Cash' : null,
+          s.online > 0 ? 'Online' : null,
+          s.credit > 0 ? 'Udhari' : null
+        ].filter(Boolean).join(' + ') || '—';
+        return '<tr>' +
+          '<td><div class="cell-strong">' + esc(s.id) + '</div><div class="cell-sub">' + esc(fmtShort(s.date)) + '</div></td>' +
+          '<td>' + esc(s.customerName || 'Walk-in') + '</td>' +
+          '<td><span class="badge info">' + esc(pay) + '</span></td>' +
+          '<td class="right cell-strong">' + esc(money(s.total)) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function renderLowStock() {
+    const host = $('#lowStockList');
+    const items = state.products
+      .filter((p) => p.quantity <= p.minimum)
+      .sort((a, b) => a.quantity - b.quantity);
+
+    if (!items.length) {
+      host.innerHTML = '<div class="empty"><svg class="ic"><use href="#i-check"/></svg>Every product is above its reorder level.</div>';
+      return;
+    }
+
+    host.innerHTML = items.map((p) =>
+      '<div class="list-item">' +
+        '<div class="li-body">' +
+          '<div class="li-title">' + esc(p.name) + '</div>' +
+          '<div class="li-sub">' + esc(p.code) + ' · min ' + p.minimum + '</div>' +
+        '</div>' +
+        '<div class="li-action">' + stockBadge(p) + '</div>' +
+        '<button class="btn btn-ghost sm" data-restock="' + esc(p.id) + '">Restock</button>' +
+      '</div>'
+    ).join('');
+  }
+
+  /* ============================================================
+     RENDER · INVENTORY
+     ============================================================ */
+  function renderInventoryFilters() {
+    const cats = Array.from(new Set(state.products.map((p) => p.category).filter(Boolean))).sort();
+    const sel = $('#invCategory');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="all">All categories</option>' +
+      cats.map((c) => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+    if (cats.includes(prev)) sel.value = prev;
+
+    $('#categoryOptions').innerHTML = cats.map((c) => '<option value="' + esc(c) + '"></option>').join('');
+  }
+
+  function renderInventoryStats() {
+    const units = state.products.reduce((s, p) => s + p.quantity, 0);
+    const stockValue = state.products.reduce((s, p) => s + p.quantity * num(p.cost), 0);
+    const low = lowStockProducts().length;
+
+    const stats = [
+      { label: 'Products', value: String(state.products.length), icon: 'i-box', tone: '' },
+      { label: 'Units in stock', value: String(units), icon: 'i-grid', tone: 'blue' },
+      { label: 'Stock value', value: money(stockValue), icon: 'i-wallet', tone: 'green' },
+      { label: 'Low / out', value: low + ' / ' + outOfStockProducts().length, icon: 'i-alert', tone: low ? 'amber' : 'green' }
+    ];
+
+    $('#invStats').innerHTML = stats.map((s) =>
+      '<div class="stat">' +
+        '<div class="stat-top"><span class="stat-label">' + esc(s.label) + '</span>' +
+        '<span class="stat-icon ' + s.tone + '"><svg class="ic"><use href="#' + s.icon + '"/></svg></span></div>' +
+        '<div class="stat-value">' + esc(s.value) + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  function renderInventoryTable() {
+    const cat = $('#invCategory').value;
+    const stockFilter = $('#invStock').value;
+
+    let list = state.products.filter((p) => {
+      if (cat !== 'all' && p.category !== cat) return false;
+      const st = stockState(p);
+      if (stockFilter === 'low' && st !== 'low') return false;
+      if (stockFilter === 'out' && st !== 'out') return false;
+      return true;
+    });
+
+    list.sort((a, b) => a.name.localeCompare(b.name));
+
+    if (!list.length) {
+      $('#inventoryTable').innerHTML = '<div class="empty"><svg class="ic"><use href="#i-box"/></svg>No products match these filters.</div>';
+      applySearch();
+      return;
+    }
+
+    $('#inventoryTable').innerHTML = '<table><thead><tr>' +
+      '<th>Product</th><th>Code</th><th class="right">Price</th><th>Stock</th><th class="right">Min</th><th class="right">Actions</th>' +
+      '</tr></thead><tbody>' +
+      list.map((p) =>
+        '<tr>' +
+          '<td><div class="cell-strong">' + esc(p.name) + '</div>' +
+            (p.category ? '<div class="cell-sub">' + esc(p.category) + '</div>' : '') + '</td>' +
+          '<td class="muted">' + esc(p.code) + '</td>' +
+          '<td class="right cell-strong">' + esc(money(p.price)) + '</td>' +
+          '<td>' + stockBadge(p) + '</td>' +
+          '<td class="right muted">' + p.minimum + '</td>' +
+          '<td class="right">' +
+            '<button class="icon-btn sm" data-restock="' + esc(p.id) + '" title="Restock"><svg class="ic"><use href="#i-plus"/></svg></button>' +
+            '<button class="icon-btn sm" data-edit-product="' + esc(p.id) + '" title="Edit"><svg class="ic"><use href="#i-edit"/></svg></button>' +
+            '<button class="icon-btn sm danger" data-delete-product="' + esc(p.id) + '" title="Delete"><svg class="ic"><use href="#i-trash"/></svg></button>' +
+          '</td>' +
+        '</tr>'
+      ).join('') +
+      '</tbody></table>';
+    applySearch();
+  }
+
+  /* ============================================================
+     RENDER · CUSTOMERS
+     ============================================================ */
+  function renderCustomers() {
+    const outstanding = totalOutstanding();
+    const withBalance = state.customers.filter((c) => c.balance > 0).length;
+
+    $('#custStats').innerHTML = [
+      { label: 'Customers', value: String(state.customers.length), icon: 'i-users', tone: 'blue' },
+      { label: 'With udhari', value: String(withBalance), icon: 'i-wallet', tone: withBalance ? 'amber' : 'green' },
+      { label: 'Outstanding', value: money(outstanding), icon: 'i-trend', tone: outstanding ? 'red' : 'green' }
+    ].map((s) =>
+      '<div class="stat">' +
+        '<div class="stat-top"><span class="stat-label">' + esc(s.label) + '</span>' +
+        '<span class="stat-icon ' + s.tone + '"><svg class="ic"><use href="#' + s.icon + '"/></svg></span></div>' +
+        '<div class="stat-value">' + esc(s.value) + '</div>' +
+      '</div>'
+    ).join('');
+
+    const list = state.customers.slice().sort((a, b) => a.name.localeCompare(b.name));
+
+    if (!list.length) {
+      $('#customerTable').innerHTML = '<div class="empty"><svg class="ic"><use href="#i-users"/></svg>No customers yet.</div>';
+      applySearch();
+      return;
+    }
+
+    $('#customerTable').innerHTML = '<table><thead><tr>' +
+      '<th>Customer</th><th>Phone</th><th class="right">Balance</th><th class="right">Entries</th><th class="right">Actions</th>' +
+      '</tr></thead><tbody>' +
+      list.map((c) => {
+        const cls = c.balance > 0 ? 'low' : c.balance < 0 ? 'info' : 'ok';
+        const label = c.balance > 0 ? money(c.balance) + ' due' : c.balance < 0 ? money(-c.balance) + ' advance' : 'Settled';
+        const wa = c.balance > 0
+          ? '<a class="icon-btn sm" href="' + buildWhatsAppLink(c) + '" target="_blank" rel="noopener" title="WhatsApp"><svg class="ic"><use href="#i-whatsapp"/></svg></a>'
+          : '';
+        return '<tr>' +
+          '<td class="cell-strong">' + esc(c.name) + '</td>' +
+          '<td class="muted">' + esc(c.phone) + '</td>' +
+          '<td class="right"><span class="badge ' + cls + '">' + esc(label) + '</span></td>' +
+          '<td class="right muted">' + c.transactions.length + '</td>' +
+          '<td class="right">' +
+            wa +
+            '<button class="icon-btn sm" data-edit-customer="' + esc(c.id) + '" title="Open ledger"><svg class="ic"><use href="#i-edit"/></svg></button>' +
+          '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>';
+    applySearch();
+  }
+
+  /* ============================================================
+     RENDER · SUPPLIERS
+     ============================================================ */
+  function renderSuppliers() {
+    const totalOutstandingSup = state.suppliers.reduce((sum, s) => sum + Math.max(0, supplierBalance(s)), 0);
+    const totalPur = state.suppliers.reduce((sum, s) => sum + supplierPurchasesTotal(s), 0);
+    const totalPay = state.suppliers.reduce((sum, s) => sum + supplierPaymentsTotal(s), 0);
+
+    $('#supStats').innerHTML = [
+      { label: 'Suppliers', value: String(state.suppliers.length), icon: 'i-store', tone: 'blue' },
+      { label: 'We owe', value: money(totalOutstandingSup), icon: 'i-wallet', tone: totalOutstandingSup ? 'red' : 'green' },
+      { label: 'Purchases', value: money(totalPur), icon: 'i-trend', tone: '' },
+      { label: 'Paid', value: money(totalPay), icon: 'i-check', tone: 'green' }
+    ].map((s) =>
+      '<div class="stat">' +
+        '<div class="stat-top"><span class="stat-label">' + esc(s.label) + '</span>' +
+        '<span class="stat-icon ' + s.tone + '"><svg class="ic"><use href="#' + s.icon + '"/></svg></span></div>' +
+        '<div class="stat-value">' + esc(s.value) + '</div>' +
+      '</div>'
+    ).join('');
+
+    const list = state.suppliers.slice().sort((a, b) => a.name.localeCompare(b.name));
+
+    if (!list.length) {
+      $('#supplierTable').innerHTML = '<div class="empty"><svg class="ic"><use href="#i-store"/></svg>No suppliers yet.</div>';
+      applySearch();
+      return;
+    }
+
+    $('#supplierTable').innerHTML = '<table><thead><tr>' +
+      '<th>Supplier</th><th>Phone</th><th class="right">Balance</th><th class="right">Items</th><th class="right">Actions</th>' +
+      '</tr></thead><tbody>' +
+      list.map((s) => {
+        const bal = supplierBalance(s);
+        const cls = bal > 0 ? 'low' : bal < 0 ? 'info' : 'ok';
+        const label = bal > 0 ? 'We owe ' + money(bal) : bal < 0 ? 'Advance ' + money(-bal) : 'Settled';
+        return '<tr>' +
+          '<td class="cell-strong">' + esc(s.name) + '</td>' +
+          '<td class="muted">' + esc(s.phone) + '</td>' +
+          '<td class="right"><span class="badge ' + cls + '">' + esc(label) + '</span></td>' +
+          '<td class="right muted">' + supplierItemCount(s) + '</td>' +
+          '<td class="right">' +
+            '<button class="icon-btn sm" data-edit-supplier="' + esc(s.id) + '" title="Open ledger"><svg class="ic"><use href="#i-edit"/></svg></button>' +
+          '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>';
+    applySearch();
+  }
+
+  /* ============================================================
+     RENDER · STAFF
+     ============================================================ */
+  function renderStaffStats() {
+    const monthly = monthlySalaryBill();
+    const mtd = totalSalaryInPeriod(
+      new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime(),
+      Date.now()
+    );
+    const todayCounts = todayAttendanceCount();
+
+    const stats = [
+      { label: 'Staff', value: String(state.staff.length), icon: 'i-user', tone: 'blue', sub: state.staff.length ? 'Active team members' : 'No staff yet' },
+      { label: 'Monthly bill', value: money(monthly), icon: 'i-wallet', tone: 'amber', sub: 'Total salaries' },
+      { label: 'Paid MTD', value: money(mtd), icon: 'i-trend', tone: 'green', sub: 'This month to date' },
+      { label: 'Present today', value: todayCounts.present + ' / ' + state.staff.length, icon: 'i-check', tone: todayCounts.present ? 'green' : '', sub: todayCounts.absent + ' absent · ' + todayCounts.half + ' half' }
+    ];
+
+    $('#staffStats').innerHTML = stats.map((s) =>
+      '<div class="stat">' +
+        '<div class="stat-top"><span class="stat-label">' + esc(s.label) + '</span>' +
+        '<span class="stat-icon ' + s.tone + '"><svg class="ic"><use href="#' + s.icon + '"/></svg></span></div>' +
+        '<div class="stat-value">' + esc(s.value) + '</div>' +
+        '<div class="stat-sub">' + esc(s.sub || '') + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  function renderStaffTable() {
+    const list = state.staff.slice().sort((a, b) => a.name.localeCompare(b.name));
+    const tKey = todayKey();
+
+    if (!list.length) {
+      $('#staffTable').innerHTML = '<div class="empty"><svg class="ic"><use href="#i-user"/></svg>No staff yet. Click "Add staff" to get started.</div>';
+      applySearch();
+      return;
+    }
+
+    $('#staffTable').innerHTML = '<table><thead><tr>' +
+      '<th>Staff</th><th>Phone</th><th class="right">Salary / mo</th><th>Joined</th><th>Today</th><th class="right">MTD payroll</th><th class="right">Actions</th>' +
+      '</tr></thead><tbody>' +
+      list.map((st) => {
+        const today = st.attendance?.[tKey] || '';
+        const mtd = currentMonthPayroll(st);
+        return '<tr>' +
+          '<td><div class="cell-strong">' + esc(st.name) + '</div>' +
+            (st.role ? '<div class="cell-sub">' + esc(st.role) + '</div>' : '') + '</td>' +
+          '<td class="muted">' + esc(st.phone || '—') + '</td>' +
+          '<td class="right cell-strong">' + esc(money(st.salary)) + '</td>' +
+          '<td class="muted small">' + esc(st.joinDate || '—') + '</td>' +
+          '<td>' +
+            '<div class="attn-quick">' +
+              '<button data-mark-today="present" data-staff-id="' + esc(st.id) + '" class="' + (today === 'present' ? 'active-p' : '') + '" title="Present">P</button>' +
+              '<button data-mark-today="absent" data-staff-id="' + esc(st.id) + '" class="' + (today === 'absent' ? 'active-a' : '') + '" title="Absent">A</button>' +
+              '<button data-mark-today="half" data-staff-id="' + esc(st.id) + '" class="' + (today === 'half' ? 'active-h' : '') + '" title="Half day">H</button>' +
+            '</div>' +
+          '</td>' +
+          '<td class="right cell-strong">' + esc(money(mtd)) + '</td>' +
+          '<td class="right">' +
+            '<button class="icon-btn sm" data-edit-staff="' + esc(st.id) + '" title="Open ledger"><svg class="ic"><use href="#i-edit"/></svg></button>' +
+          '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>';
+    applySearch();
+  }
+
+  function renderStaff() {
+    renderStaffStats();
+    renderStaffTable();
+  }
+
+  /* ============================================================
+     RENDER · STAFF MODAL
+     ============================================================ */
+  function openStaffModal(staff) {
+    const isEdit = !!staff;
+    currentStaffId = isEdit ? staff.id : null;
+    $('#staffModalTitle').textContent = isEdit ? 'Staff ledger' : 'Add staff';
+    $('#staffId').value = isEdit ? staff.id : '';
+    $('#stName').value = isEdit ? staff.name : '';
+    $('#stPhone').value = isEdit ? (staff.phone || '') : '';
+    $('#stRole').value = isEdit ? (staff.role || '') : '';
+    $('#stSalary').value = isEdit ? staff.salary : '';
+    $('#stJoinDate').value = isEdit ? (staff.joinDate || '') : todayKey();
+
+    $('#deleteStaffBtn').hidden = !isEdit;
+    $('#staffDetail').hidden = !isEdit;
+
+    if (isEdit) {
+      attnCursor = { year: new Date().getFullYear(), month: new Date().getMonth() };
+      renderStaffMonthlyPayroll();
+      renderAttendanceCalendar();
+    } else {
+      $('#staffMonthlyPayroll').innerHTML = '';
+      $('#attnCalendar').innerHTML = '';
+    }
+
+    openModal('#staffModal');
+    setTimeout(() => $('#stName').focus(), 40);
+  }
+
+  function renderStaffMonthlyPayroll() {
+    const staff = state.staff.find(s => s.id === currentStaffId);
+    const host = $('#staffMonthlyPayroll');
+    if (!staff || !staff.joinDate) {
+      host.innerHTML = '';
+      return;
+    }
+
+    const months = computeMonthlyPayroll(staff);
+    if (!months.length) {
+      host.innerHTML = '<div class="card-title">Payroll history</div><div class="empty" style="padding:20px">No payroll yet.</div>';
+      return;
+    }
+
+    const total = round2(months.reduce((s, m) => s + m.amount, 0));
+
+    host.innerHTML = '<div class="card-title">Payroll history · ' + money(total) + ' total</div>' +
+      '<div class="table-wrap"><table><thead><tr>' +
+      '<th>Month</th><th class="right">Present</th><th class="right">Absent</th><th class="right">Half</th><th class="right">Days billed</th><th class="right">Amount</th>' +
+      '</tr></thead><tbody>' +
+      months.map(m => {
+        const billed = m.present + m.unmarked + m.half * 0.5;
+        return '<tr>' +
+          '<td class="cell-strong">' + esc(m.label) + (m.isCurrent ? ' <span class="badge info" style="margin-left:6px">Current</span>' : '') + '</td>' +
+          '<td class="right">' + m.present + (m.unmarked ? ' <span class="muted small">(+' + m.unmarked + ')</span>' : '') + '</td>' +
+          '<td class="right">' + m.absent + '</td>' +
+          '<td class="right">' + m.half + '</td>' +
+          '<td class="right">' + billed.toFixed(1) + '</td>' +
+          '<td class="right cell-strong">' + esc(money(m.amount)) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function renderAttendanceCalendar() {
+    const staff = state.staff.find(s => s.id === currentStaffId);
+    if (!staff) return;
+
+    const year = attnCursor.year;
+    const month = attnCursor.month;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = new Date(year, month, 1).getDay(); // 0 = Sun
+    const startOffset = (firstDay + 6) % 7; // Mon-start
+
+    const tKey = todayKey();
+    const joinKey = isoToDayKey(staff.joinDate);
+
+    // Summary
+    let p = 0, a = 0, h = 0, u = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const k = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      if (k < joinKey || k > tKey) continue;
+      const s = staff.attendance?.[k];
+      if (s === 'present') p++;
+      else if (s === 'absent') a++;
+      else if (s === 'half') h++;
+      else u++;
+    }
+
+    let html = '';
+    html += '<div class="attn-summary">' +
+      '<div class="p"><div class="val">' + p + '</div><div class="lbl">Present</div></div>' +
+      '<div class="a"><div class="val">' + a + '</div><div class="lbl">Absent</div></div>' +
+      '<div class="h"><div class="val">' + h + '</div><div class="lbl">Half</div></div>' +
+      '<div><div class="val">' + u + '</div><div class="lbl">Unmarked</div></div>' +
+    '</div>';
+
+    html += '<div class="attn-cal-head">' +
+      ['M','T','W','T','F','S','S'].map(d => '<span>' + d + '</span>').join('') +
+      '</div><div class="attn-cal-grid">';
+
+    for (let i = 0; i < startOffset; i++) html += '<button class="attn-day empty"></button>';
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const k = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      const status = staff.attendance?.[k];
+      const isToday = k === tKey;
+      const isBefore = k < joinKey;
+      const isFuture = k > tKey;
+
+      const cls = ['attn-day'];
+      if (status) cls.push(status);
+      if (isToday) cls.push('today');
+      if (isBefore || isFuture) cls.push('disabled');
+
+      html += '<button class="' + cls.join(' ') + '" data-attn-day="' + k + '">' + d + '</button>';
+    }
+
+    html += '</div>';
+
+    $('#attnCalendar').innerHTML = html;
+    $('#attnMonthLabel').textContent = new Date(year, month, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  }
+
+  /* ============================================================
+     RENDER · SALE
+     ============================================================ */
+  function renderSaleOptions() {
+    $('#productList').innerHTML = state.products
+      .map((p) => '<option value="' + esc(p.name + ' · ' + p.code) + '"></option>').join('');
+    $('#customerList').innerHTML = state.customers
+      .map((c) => '<option value="' + esc(c.name) + '"></option>').join('');
+  }
+
+  function cartTotal() {
+    return round2(cart.reduce((sum, i) => sum + i.qty * i.price, 0));
+  }
+
+  function renderCart() {
+    const host = $('#cartBody');
+    const count = cart.reduce((s, i) => s + i.qty, 0);
+    $('#cartCount').textContent = cart.length ? count + ' item' + (count === 1 ? '' : 's') : '';
+
+    if (!cart.length) {
+      host.innerHTML = '<div class="empty"><svg class="ic"><use href="#i-cart"/></svg>Cart is empty — add a product above.</div>';
+    } else {
+      host.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+        '<th>Item</th><th>Qty</th><th class="right">Price</th><th class="right">Total</th><th></th>' +
+        '</tr></thead><tbody>' +
+        cart.map((item, i) =>
+          '<tr>' +
+            '<td><div class="cell-strong">' + esc(item.name) + '</div><div class="cell-sub">' + esc(item.code) + '</div></td>' +
+            '<td><input class="qty-input" type="number" min="1" step="1" value="' + item.qty + '" data-qty="' + i + '" aria-label="Quantity"></td>' +
+            '<td class="right muted">' + esc(money(item.price)) + '</td>' +
+            '<td class="right cell-strong" data-line-total>' + esc(money(item.qty * item.price)) + '</td>' +
+            '<td class="right"><button class="icon-btn sm danger" data-remove-line="' + i + '" aria-label="Remove"><svg class="ic"><use href="#i-x"/></svg></button></td>' +
+          '</tr>'
+        ).join('') +
+        '</tbody></table></div>';
+    }
+
+    if (!payDirty) {
+      const total = cartTotal();
+      $('#payCash').value = total ? total.toFixed(2) : '';
+    }
+    syncPayments();
+  }
+
+  function syncPayments() {
+    const total = cartTotal();
+    const cash = num($('#payCash').value);
+    const online = num($('#payOnline').value);
+    const credit = num($('#payCredit').value);
+    const paid = round2(cash + online + credit);
+    const remaining = round2(total - paid);
+
+    $('#saleTotal').textContent = money(total);
+
+    const remEl = $('#saleRemaining');
+    const remRow = remEl.parentElement;
+    if (Math.abs(remaining) < 0.005) {
+      remEl.textContent = 'Balanced';
+      remEl.className = 'remaining-ok';
+      remRow.querySelector('span').textContent = 'Status';
+    } else if (remaining > 0) {
+      remEl.textContent = money(remaining) + ' left';
+      remEl.className = 'remaining-bad';
+      remRow.querySelector('span').textContent = 'Remaining';
+    } else {
+      remEl.textContent = money(-remaining) + ' over';
+      remEl.className = 'remaining-bad';
+      remRow.querySelector('span').textContent = 'Overpaid';
+    }
+
+    const balanced = Math.abs(remaining) < 0.005;
+    const hasCart = cart.length > 0;
+    $('#completeSale').disabled = !hasCart || !balanced;
+
+    const msg = $('#saleMsg');
+    if (!hasCart) msg.textContent = 'Add at least one product to continue.';
+    else if (!balanced && remaining > 0) msg.textContent = 'Collect or assign the remaining amount before completing.';
+    else if (!balanced && remaining < 0) msg.textContent = 'Payment exceeds the cart total.';
+    else msg.textContent = '';
+  }
+
+  function findProduct(value) {
+    const v = String(value || '').trim().toLowerCase();
+    if (!v) return null;
+    return state.products.find((p) =>
+      (p.name + ' · ' + p.code).toLowerCase() === v ||
+      p.name.toLowerCase() === v ||
+      p.code.toLowerCase() === v
+    ) || null;
+  }
+
+  function updateSaleHint() {
+    const p = findProduct($('#saleProduct').value);
+    if (!p) {
+      $('#stockHint').textContent = '';
+      return;
+    }
+    $('#stockHint').textContent = 'Available: ' + p.quantity + ' · ' + p.code;
+    if (!$('#salePrice').value) $('#salePrice').value = p.price;
+    updateLineTotal();
+  }
+
+  function updateLineTotal() {
+    const q = num($('#saleQty').value);
+    const pr = num($('#salePrice').value);
+    $('#saleLineTotal').value = q && pr ? (q * pr).toFixed(2) : '';
+  }
+
+  function addToCart() {
+    const product = findProduct($('#saleProduct').value);
+    if (!product) { toast('Pick a product from the suggestions.', 'error'); return; }
+
+    const qty = parseInt($('#saleQty').value, 10);
+    if (!Number.isFinite(qty) || qty < 1) { toast('Quantity must be a whole number above zero.', 'error'); return; }
+
+    const price = num($('#salePrice').value);
+    if (price < 0) { toast('Price cannot be negative.', 'error'); return; }
+
+    const existing = cart.find((i) => i.productId === product.id);
+    const totalQty = qty + (existing ? existing.qty : 0);
+
+    if (totalQty > product.quantity) {
+      toast('Only ' + product.quantity + ' of ' + product.name + ' in stock.', 'error');
+      return;
+    }
+
+    if (existing) {
+      existing.qty = totalQty;
+      existing.price = price || existing.price;
+    } else {
+      cart.push({
+        productId: product.id, code: product.code, name: product.name,
+        qty: qty, price: price || product.price, cost: num(product.cost)
+      });
+    }
+
+    $('#saleProduct').value = '';
+    $('#saleQty').value = '1';
+    $('#salePrice').value = '';
+    $('#saleLineTotal').value = '';
+    $('#stockHint').textContent = '';
+    payDirty = false;
+
+    renderCart();
+    $('#saleProduct').focus();
+  }
+
+  /* ============================================================
+     RENDER · REPORTS
+     ============================================================ */
+  function filteredSales() {
+    const range = $('#repRange').value;
+    const from = periodStart(range);
+
+    return state.sales
+      .filter((s) => new Date(s.date).getTime() >= from)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+
+  function renderReports() {
+    const list = filteredSales();
+    const valid = list.filter((s) => !s.voided);
+
+    const revenue = valid.reduce((sum, s) => sum + s.total, 0);
+    const cash = valid.reduce((sum, s) => sum + s.cash, 0);
+    const online = valid.reduce((sum, s) => sum + s.online, 0);
+    const credit = valid.reduce((sum, s) => sum + s.credit, 0);
+
+    $('#repStats').innerHTML = [
+      { label: 'Transactions', value: String(valid.length), icon: 'i-receipt', tone: 'blue' },
+      { label: 'Revenue', value: money(revenue), icon: 'i-trend', tone: 'green' },
+      { label: 'Cash', value: money(cash), icon: 'i-wallet', tone: '' },
+      { label: 'Online', value: money(online), icon: 'i-wallet', tone: 'blue' },
+      { label: 'Udhari', value: money(credit), icon: 'i-wallet', tone: credit ? 'amber' : 'green' }
+    ].map((s) =>
+      '<div class="stat">' +
+        '<div class="stat-top"><span class="stat-label">' + esc(s.label) + '</span>' +
+        '<span class="stat-icon ' + s.tone + '"><svg class="ic"><use href="#' + s.icon + '"/></svg></span></div>' +
+        '<div class="stat-value">' + esc(s.value) + '</div>' +
+      '</div>'
+    ).join('');
+
+    if (!list.length) {
+      $('#repTable').innerHTML = '<div class="empty"><svg class="ic"><use href="#i-chart"/></svg>No transactions in this period.</div>';
+      return;
+    }
+
+    $('#repTable').innerHTML = '<table><thead><tr>' +
+      '<th>Invoice</th><th>Date</th><th>Customer</th><th>Items</th><th>Payment</th><th class="right">Total</th><th></th>' +
+      '</tr></thead><tbody>' +
+      list.map((s) => {
+        const pay = [
+          s.cash > 0 ? 'Cash ' + money(s.cash) : null,
+          s.online > 0 ? 'Online ' + money(s.online) : null,
+          s.credit > 0 ? 'Udhari ' + money(s.credit) : null
+        ].filter(Boolean).join('<br>') || '—';
+
+        const items = s.items.map((i) => esc(i.name) + ' × ' + i.qty).join('<br>');
+
+        return '<tr' + (s.voided ? ' style="opacity:.55"' : '') + '>' +
+          '<td class="cell-strong">' + esc(s.id) +
+            (s.voided ? ' <span class="badge void">void</span>' : '') + '</td>' +
+          '<td class="muted small">' + esc(fmtDate(s.date)) + '</td>' +
+          '<td>' + esc(s.customerName || 'Walk-in') + '</td>' +
+          '<td class="small">' + items + '</td>' +
+          '<td class="small">' + pay + '</td>' +
+          '<td class="right cell-strong">' + esc(money(s.total)) + '</td>' +
+          '<td class="right">' +
+            (s.voided ? '' : '<button class="icon-btn sm danger" data-void-sale="' + esc(s.id) + '" title="Void sale"><svg class="ic"><use href="#i-trash"/></svg></button>') +
+          '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  }
+
+  /* ============================================================
+     RENDER · FINANCE
+     ============================================================ */
+  function renderFinance() {
+    const range = $('#finRange').value;
+    const from = periodStart(range);
+    const to = Date.now();
+
+    const sales = activeSales().filter(s => new Date(s.date).getTime() >= from);
+    const revenue = round2(sales.reduce((sum, s) => sum + s.total, 0));
+    const salesCash = round2(sales.reduce((sum, s) => sum + s.cash + s.online, 0));
+
+    let purchases = 0, supplierPayments = 0, customerPayments = 0;
+    const txRows = [];
+
+    state.suppliers.forEach(sup => {
+      sup.transactions.forEach(t => {
+        if (new Date(t.date).getTime() < from) return;
+        if (t.type === 'PURCHASE') {
+          purchases += t.amount;
+          txRows.push({ date: t.date, type: 'Purchase', party: sup.name, amount: t.amount, direction: 'Spend', note: t.note || '' });
+        } else if (t.type === 'PAYMENT') {
+          supplierPayments += t.amount;
+          txRows.push({ date: t.date, type: 'Supplier payment', party: sup.name, amount: t.amount, direction: 'Out', note: t.note || '' });
+        }
+      });
+    });
+
+    state.customers.forEach(c => {
+      c.transactions.forEach(t => {
+        if (new Date(t.date).getTime() < from) return;
+        if (t.type === 'GOT') {
+          customerPayments += t.amount;
+          txRows.push({ date: t.date, type: 'Customer payment', party: c.name, amount: t.amount, direction: 'In', note: t.note || '' });
+        }
+      });
+    });
+
+    sales.forEach(s => {
+      const direction = (s.cash + s.online > 0) ? 'In' : 'Credit';
+      txRows.push({ date: s.date, type: 'Sale', party: s.customerName || 'Walk-in', amount: s.total, direction, note: s.id });
+    });
+
+    // Salaries
+    let salaries = 0;
+    state.staff.forEach(st => {
+      const amount = computeSalaryAccrual(st, from, to);
+      if (amount > 0) {
+        salaries += amount;
+        txRows.push({ date: new Date().toISOString(), type: 'Salary', party: st.name, amount, direction: 'Spend', note: 'Accrued in period' });
+      }
+    });
+
+    purchases = round2(purchases);
+    supplierPayments = round2(supplierPayments);
+    customerPayments = round2(customerPayments);
+    salaries = round2(salaries);
+
+    txRows.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const costOfGoodsSold = totalCostOfGoodsSold(sales);
+    const grossProfit = round2(revenue - costOfGoodsSold);
+    const netProfit = round2(grossProfit - salaries);
+    const margin = revenue > 0 ? round2((netProfit / revenue) * 100) : 0;
+    const cashIn = round2(salesCash + customerPayments);
+    const cashOut = round2(supplierPayments + salaries);
+    const netCash = round2(cashIn - cashOut);
+
+    const receivables = totalOutstanding();
+    const payables = round2(state.suppliers.reduce((sum, s) => sum + Math.max(0, supplierBalance(s)), 0));
+
+    $('#finStats').innerHTML = [
+      { label: 'Revenue', value: money(revenue), icon: 'i-trend', tone: 'green', sub: 'Sales in period' },
+      { label: 'Purchases', value: money(purchases), icon: 'i-store', tone: 'red', sub: 'Stock bought' },
+      { label: 'Gross profit', value: money(grossProfit), icon: 'i-wallet', tone: grossProfit >= 0 ? 'green' : 'red', sub: 'Revenue − cost of items sold' },
+      { label: 'Salaries', value: money(salaries), icon: 'i-user', tone: 'amber', sub: 'Staff payroll' },
+      { label: 'Net profit', value: money(netProfit), icon: 'i-trend', tone: netProfit >= 0 ? 'green' : 'red', sub: margin + '% margin' },
+      { label: 'Net cash', value: money(netCash), icon: 'i-receipt', tone: netCash >= 0 ? 'green' : 'red', sub: 'In − out' }
+    ].map((s) =>
+      '<div class="stat">' +
+        '<div class="stat-top"><span class="stat-label">' + esc(s.label) + '</span>' +
+        '<span class="stat-icon ' + s.tone + '"><svg class="ic"><use href="#' + s.icon + '"/></svg></span></div>' +
+        '<div class="stat-value">' + esc(s.value) + '</div>' +
+        '<div class="stat-sub">' + esc(s.sub) + '</div>' +
+      '</div>'
+    ).join('');
+
+    $('#finBreakdown').innerHTML =
+      '<div class="pay-row"><span>Revenue</span><strong>' + money(revenue) + '</strong></div>' +
+      '<div class="pay-row"><span>− Cost of goods sold</span><strong>' + money(costOfGoodsSold) + '</strong></div>' +
+      '<div class="pay-row total"><span>Gross profit</span><strong>' + money(grossProfit) + '</strong></div>' +
+      '<div class="pay-row"><span>− Salaries</span><strong>' + money(salaries) + '</strong></div>' +
+      '<div class="pay-row total"><span>Net profit</span><strong>' + money(netProfit) + '</strong></div>' +
+      '<div class="pay-row"><span>Margin</span><strong>' + margin + '%</strong></div>' +
+      '<hr class="hr">' +
+      '<div class="pay-row"><span>Cash in</span><strong>' + money(cashIn) + '</strong></div>' +
+      '<div class="pay-row"><span>− Cash out</span><strong>' + money(cashOut) + '</strong></div>' +
+      '<div class="pay-row total"><span>Net cash</span><strong>' + money(netCash) + '</strong></div>';
+
+    const stockValue = state.products.reduce((s, p) => s + p.quantity * num(p.cost), 0);
+    $('#finBalances').innerHTML =
+      '<div class="pay-row"><span>Receivables (customers)</span><strong>' + money(receivables) + '</strong></div>' +
+      '<div class="pay-row"><span>Payables (suppliers)</span><strong>' + money(payables) + '</strong></div>' +
+      '<div class="pay-row"><span>Stock value</span><strong>' + money(stockValue) + '</strong></div>' +
+      '<div class="pay-row"><span>Monthly salary bill</span><strong>' + money(monthlySalaryBill()) + '</strong></div>' +
+      '<div class="pay-row"><span>Customers</span><strong>' + state.customers.length + '</strong></div>' +
+      '<div class="pay-row"><span>Suppliers</span><strong>' + state.suppliers.length + '</strong></div>' +
+      '<div class="pay-row"><span>Staff</span><strong>' + state.staff.length + '</strong></div>';
+
+    if (!txRows.length) {
+      $('#finTable').innerHTML = '<div class="empty"><svg class="ic"><use href="#i-wallet"/></svg>No transactions in this period.</div>';
+      return;
+    }
+
+    $('#finTable').innerHTML = '<table><thead><tr>' +
+      '<th>Date</th><th>Type</th><th>Party</th><th>Direction</th><th class="right">Amount</th><th>Note</th>' +
+      '</tr></thead><tbody>' +
+      txRows.map(r => {
+        const dirClass = r.direction === 'In' ? 'ok' : r.direction === 'Out' ? 'out' : r.direction === 'Credit' ? 'low' : 'info';
+        return '<tr>' +
+          '<td class="small muted">' + esc(fmtDate(r.date)) + '</td>' +
+          '<td>' + esc(r.type) + '</td>' +
+          '<td>' + esc(r.party) + '</td>' +
+          '<td><span class="badge ' + dirClass + '">' + esc(r.direction) + '</span></td>' +
+          '<td class="right cell-strong">' + esc(money(r.amount)) + '</td>' +
+          '<td class="small muted">' + esc(r.note || '—') + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  }
+
+  /* ============================================================
+     RENDER · NOTIFICATIONS
+     ============================================================ */
+  function renderNotifications() {
+    const low = lowStockProducts();
+    const out = outOfStockProducts();
+    const count = low.length;
+
+    const badge = $('#notifCount');
+    badge.textContent = String(count);
+    badge.hidden = count === 0;
+
+    const host = $('#notifList');
+    if (!count) {
+      host.innerHTML = '<div class="empty" style="padding:20px"><svg class="ic"><use href="#i-check"/></svg>Stock levels look healthy.</div>';
+      return;
+    }
+
+    host.innerHTML = low.map((p) => {
+      const isOut = p.quantity <= 0;
+      return '<div class="list-item">' +
+        '<div class="li-body">' +
+          '<div class="li-title">' + esc(p.name) + '</div>' +
+          '<div class="li-sub">' + esc(p.code) + ' · ' + (isOut ? 'out of stock' : p.quantity + ' left, min ' + p.minimum) + '</div>' +
+        '</div>' +
+        '<button class="btn btn-ghost sm" data-restock="' + esc(p.id) + '">Restock</button>' +
+      '</div>';
+    }).join('');
+
+    if (out.length && out.length !== count) {
+      host.innerHTML += '<p class="small muted" style="margin-top:6px">' + out.length + ' product(s) completely out of stock.</p>';
+    }
+  }
+
+  /* ============================================================
+     RENDER ALL
+     ============================================================ */
+  function renderAll() {
+    renderDashboard();
+    renderInventoryFilters();
+    renderInventoryStats();
+    renderInventoryTable();
+    renderCustomers();
+    renderSuppliers();
+    renderStaff();
+    renderSaleOptions();
+    renderCart();
+    renderReports();
+    renderFinance();
+    renderNotifications();
+    $('#dashShop').textContent = settings.shopName || 'My Shop';
+    applySearch();
+  }
+
+  /* ============================================================
+     PRODUCT MODAL
+     ============================================================ */
+  function openProductModal(product) {
+    const isEdit = !!product;
+    $('#productModalTitle').textContent = isEdit ? 'Edit product' : 'Add product';
+    $('#productId').value = isEdit ? product.id : '';
+    $('#pName').value = isEdit ? product.name : '';
+    $('#pCategory').value = isEdit ? (product.category || '') : '';
+    $('#pCost').value = isEdit ? num(product.cost) : '';
+    $('#pPrice').value = isEdit ? product.price : '';
+    $('#pQty').value = isEdit ? product.quantity : 0;
+    $('#pMin').value = isEdit ? product.minimum : 5;
+    openModal('#productModal');
+    setTimeout(() => $('#pName').focus(), 40);
+  }
+
+  $('#productForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const id = $('#productId').value;
+    const name = $('#pName').value.trim();
+    const category = $('#pCategory').value.trim();
+    const cost = num($('#pCost').value);
+    const price = num($('#pPrice').value);
+    const qty = parseInt($('#pQty').value, 10);
+    const min = parseInt($('#pMin').value, 10);
+
+    if (!name) { toast('Product name is required.', 'error'); return; }
+    if (cost < 0) { toast('Cost price cannot be negative.', 'error'); return; }
+    if (price < 0) { toast('Price cannot be negative.', 'error'); return; }
+    if (!Number.isFinite(qty) || qty < 0) { toast('Quantity must be zero or more.', 'error'); return; }
+    if (!Number.isFinite(min) || min < 0) { toast('Reorder level must be zero or more.', 'error'); return; }
+
+    if (id) {
+      const p = state.products.find((x) => x.id === id);
+      if (p) {
+        Object.assign(p, { name, category, cost, price, quantity: qty, minimum: min });
+        toast('Product updated.');
+      }
+    } else {
+      state.products.push({
+        id: uid('p'), code: nextProductCode(),
+        name, category, cost, price, quantity: qty, minimum: min
+      });
+      toast('“' + name + '” added to inventory.');
+    }
+
+    closeModal('#productModal');
+    save();
+  });
+
+  /* ============================================================
+     CUSTOMER MODAL
+     ============================================================ */
+  function openCustomerModal(customer) {
+    const isEdit = !!customer;
+    $('#customerModalTitle').textContent = isEdit ? 'Customer ledger' : 'Add customer';
+    $('#customerId').value = isEdit ? customer.id : '';
+    $('#cName').value = isEdit ? customer.name : '';
+    $('#cPhone').value = isEdit ? customer.phone : '';
+    $('#cAmount').value = '';
+    $('#cNote').value = '';
+    $('#cType').value = 'GAVE';
+
+    $('#deleteCustomerBtn').hidden = !isEdit;
+    $('#settleBtn').hidden = !isEdit || !customer || customer.balance <= 0;
+
+    if (isEdit) {
+      $('#customerSummary').innerHTML =
+        '<div class="stat" style="box-shadow:none"><div class="stat-label">Balance</div>' +
+        '<div class="stat-value" style="font-size:19px">' + esc(money(customer.balance)) + '</div></div>' +
+        '<div class="stat" style="box-shadow:none"><div class="stat-label">Entries</div>' +
+        '<div class="stat-value" style="font-size:19px">' + customer.transactions.length + '</div></div>';
+      renderLedger(customer);
+    } else {
+      $('#customerSummary').innerHTML = '';
+      $('#customerLedger').innerHTML = '';
+    }
+
+    openModal('#customerModal');
+    setTimeout(() => $('#cName').focus(), 40);
+  }
+
+  function renderLedger(customer) {
+    const host = $('#customerLedger');
+    if (!customer || !customer.transactions.length) {
+      host.innerHTML = '<div class="empty" style="padding:20px">No transactions yet.</div>';
+      return;
+    }
+
+    const rows = customer.transactions.slice().reverse().map((t) =>
+      '<tr>' +
+        '<td class="small muted">' + esc(fmtDate(t.date)) + '</td>' +
+        '<td><span class="badge ' + (t.type === 'GAVE' ? 'low' : 'ok') + '">' + (t.type === 'GAVE' ? 'Gave' : 'Got') + '</span></td>' +
+        '<td class="right cell-strong">' + esc(money(t.amount)) + '</td>' +
+        '<td class="small muted">' + esc(t.note || '—') + '</td>' +
+      '</tr>'
+    ).join('');
+
+    host.innerHTML = '<div class="card-title">Transaction history</div><div class="table-wrap"><table><thead><tr>' +
+      '<th>Date</th><th>Type</th><th class="right">Amount</th><th>Note</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  $('#customerForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const id = $('#customerId').value;
+    const name = $('#cName').value.trim();
+    const phone = $('#cPhone').value.trim();
+    const amount = num($('#cAmount').value);
+    const type = $('#cType').value;
+    const note = $('#cNote').value.trim();
+
+    if (!name || !phone) { toast('Name and phone are both required.', 'error'); return; }
+
+    const duplicate = state.customers.find((c) => c.phone === phone && c.id !== id);
+    if (duplicate) { toast('Another customer already uses this phone number.', 'error'); return; }
+
+    if (amount < 0) { toast('Amount cannot be negative.', 'error'); return; }
+
+    let customer;
+    if (id) {
+      customer = state.customers.find((c) => c.id === id);
+      if (!customer) return;
+      customer.name = name;
+      customer.phone = phone;
+    } else {
+      customer = { id: uid('c'), name, phone, balance: 0, transactions: [] };
+      state.customers.push(customer);
+    }
+
+    if (amount > 0) {
+      const delta = type === 'GAVE' ? amount : -amount;
+      customer.balance = round2(customer.balance + delta);
+      customer.transactions.push({
+        id: uid('t'), date: new Date().toISOString(),
+        type, amount, note, balance: customer.balance
+      });
+    }
+
+    toast('Customer saved.');
+    closeModal('#customerModal');
+    save();
+  });
+
+  $('#deleteCustomerBtn').addEventListener('click', async () => {
+    const id = $('#customerId').value;
+    const customer = state.customers.find((c) => c.id === id);
+    if (!customer) return;
+
+    const ok = await confirmDialog({
+      title: 'Delete customer?',
+      message: 'This will permanently remove ' + customer.name + ' and their ' + customer.transactions.length + ' transaction(s).',
+      confirmText: 'Delete', danger: true
+    });
+    if (!ok) return;
+
+    state.customers = state.customers.filter((c) => c.id !== id);
+    closeModal('#customerModal');
+    toast('Customer removed.');
+    save();
+  });
+
+  $('#settleBtn').addEventListener('click', () => {
+    const id = $('#customerId').value;
+    const customer = state.customers.find((c) => c.id === id);
+    if (!customer || customer.balance <= 0) return;
+
+    const amount = customer.balance;
+    customer.balance = 0;
+    customer.transactions.push({
+      id: uid('t'), date: new Date().toISOString(),
+      type: 'GOT', amount, note: 'Balance settled', balance: 0
+    });
+    toast('Balance settled.');
+    openCustomerModal(customer);
+    save();
+  });
+
+  /* ============================================================
+     SUPPLIER MODAL
+     ============================================================ */
+  function openSupplierModal(supplier) {
+    const isEdit = !!supplier;
+    $('#supplierModalTitle').textContent = isEdit ? 'Supplier ledger' : 'Add supplier';
+    $('#supplierId').value = isEdit ? supplier.id : '';
+    $('#sName').value = isEdit ? supplier.name : '';
+    $('#sPhone').value = isEdit ? supplier.phone : '';
+
+    $('#deleteSupplierBtn').hidden = !isEdit;
+    $('#supplierTxnSection').hidden = !isEdit;
+
+    if (isEdit) {
+      const bal = supplierBalance(supplier);
+      $('#supplierSummary').innerHTML =
+        '<div class="stat" style="box-shadow:none"><div class="stat-label">Balance</div>' +
+        '<div class="stat-value" style="font-size:19px">' + esc(money(bal)) + '</div></div>' +
+        '<div class="stat" style="box-shadow:none"><div class="stat-label">Purchases</div>' +
+        '<div class="stat-value" style="font-size:19px">' + esc(money(supplierPurchasesTotal(supplier))) + '</div></div>' +
+        '<div class="stat" style="box-shadow:none"><div class="stat-label">Paid</div>' +
+        '<div class="stat-value" style="font-size:19px">' + esc(money(supplierPaymentsTotal(supplier))) + '</div></div>';
+      renderSupplierLedger(supplier);
+      renderSupplierItemsPurchased(supplier);
+      resetSupplierTxnForm();
+    } else {
+      $('#supplierSummary').innerHTML = '';
+      $('#supplierLedger').innerHTML = '';
+      $('#supplierItemsPurchased').innerHTML = '';
+    }
+
+    openModal('#supplierModal');
+    setTimeout(() => $('#sName').focus(), 40);
+  }
+
+  function renderSupplierLedger(supplier) {
+    const host = $('#supplierLedger');
+    if (!supplier.transactions.length) {
+      host.innerHTML = '<div class="empty" style="padding:20px">No transactions yet.</div>';
+      return;
+    }
+
+    const rows = supplier.transactions.slice().reverse().map((t) => {
+      const itemSummary = (t.items && t.items.length)
+        ? t.items.map((i) => esc(i.name) + ' ×' + i.qty).join(', ')
+        : '';
+      return '<tr>' +
+        '<td class="small muted">' + esc(fmtDate(t.date)) + '</td>' +
+        '<td><span class="badge ' + (t.type === 'PURCHASE' ? 'low' : 'ok') + '">' + (t.type === 'PURCHASE' ? 'Purchase' : 'Payment') + '</span></td>' +
+        '<td class="right cell-strong">' + esc(money(t.amount)) + '</td>' +
+        '<td class="small muted">' + esc(t.note || '—') + (itemSummary ? '<div class="cell-sub">' + itemSummary + '</div>' : '') + '</td>' +
+      '</tr>';
+    }).join('');
+
+    host.innerHTML = '<div class="card-title">Transaction history</div><div class="table-wrap"><table><thead><tr>' +
+      '<th>Date</th><th>Type</th><th class="right">Amount</th><th>Note</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function renderSupplierItemsPurchased(supplier) {
+    const host = $('#supplierItemsPurchased');
+    const items = allSupplierItems(supplier);
+    if (!items.length) {
+      host.innerHTML = '<div class="card-title">Items purchased</div><div class="empty" style="padding:20px">No itemised purchases recorded.</div>';
+      return;
+    }
+
+    host.innerHTML = '<div class="card-title">Items purchased</div><div class="table-wrap"><table><thead><tr>' +
+      '<th>Date</th><th>Item</th><th class="right">Qty</th><th class="right">Unit cost</th><th class="right">Total</th>' +
+      '</tr></thead><tbody>' +
+      items.map((i) =>
+        '<tr>' +
+          '<td class="small muted">' + esc(fmtShort(i.date)) + '</td>' +
+          '<td class="cell-strong">' + esc(i.name) + '</td>' +
+          '<td class="right">' + i.qty + '</td>' +
+          '<td class="right">' + esc(money(i.cost)) + '</td>' +
+          '<td class="right cell-strong">' + esc(money(i.total)) + '</td>' +
+        '</tr>'
+      ).join('') +
+      '</tbody></table></div>';
+  }
+
+  function resetSupplierTxnForm() {
+    $('#supplierTxnType').value = 'PURCHASE';
+    $('#supplierTxnAmount').value = '';
+    $('#supplierTxnNote').value = '';
+    $('#supplierItemRows').innerHTML = '';
+    $('#supplierItemsTotal').textContent = money(0);
+    updateSupplierTxnUI();
+  }
+
+  function updateSupplierTxnUI() {
+    const isPurchase = $('#supplierTxnType').value === 'PURCHASE';
+    $('#supplierItemsBuilder').style.display = isPurchase ? '' : 'none';
+  }
+
+  function addSupplierItemRow() {
+    const host = $('#supplierItemRows');
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML =
+      '<label class="field"><span>Item name</span><input class="supplier-item-name" placeholder="e.g. Notebook"></label>' +
+      '<label class="field"><span>Qty</span><input class="supplier-item-qty" type="number" min="1" step="1" value="1"></label>' +
+      '<label class="field"><span>Unit cost</span><input class="supplier-item-cost" type="number" min="0" step="0.01" placeholder="0.00"></label>' +
+      '<button type="button" class="icon-btn sm danger supplier-item-remove" title="Remove"><svg class="ic"><use href="#i-x"/></svg></button>';
+    host.appendChild(row);
+    row.querySelector('.supplier-item-name').focus();
+    row.querySelectorAll('input').forEach((inp) => inp.addEventListener('input', updateSupplierItemsTotal));
+    row.querySelector('.supplier-item-remove').addEventListener('click', () => {
+      row.remove();
+      updateSupplierItemsTotal();
+    });
+    updateSupplierItemsTotal();
+  }
+
+  function readSupplierItemRows() {
+    const rows = Array.from($('#supplierItemRows').querySelectorAll('.item-row'));
+    const items = [];
+    rows.forEach((row) => {
+      const name = row.querySelector('.supplier-item-name').value.trim();
+      const qty = parseInt(row.querySelector('.supplier-item-qty').value, 10);
+      const cost = num(row.querySelector('.supplier-item-cost').value);
+      if (name && Number.isFinite(qty) && qty > 0 && cost >= 0) {
+        items.push({ name, qty, cost: round2(cost) });
+      }
+    });
+    return items;
+  }
+
+  function updateSupplierItemsTotal() {
+    const items = readSupplierItemRows();
+    const total = round2(items.reduce((sum, i) => sum + i.qty * i.cost, 0));
+    $('#supplierItemsTotal').textContent = money(total);
+    if ($('#supplierTxnType').value === 'PURCHASE' && total > 0) {
+      $('#supplierTxnAmount').value = total.toFixed(2);
+    }
+  }
+
+  $('#addSupplierItemBtn').addEventListener('click', addSupplierItemRow);
+
+  $('#supplierTxnType').addEventListener('change', () => {
+    updateSupplierTxnUI();
+    if ($('#supplierTxnType').value === 'PURCHASE') updateSupplierItemsTotal();
+  });
+
+  $('#supplierForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const id = $('#supplierId').value;
+    const name = $('#sName').value.trim();
+    const phone = $('#sPhone').value.trim();
+
+    if (!name || !phone) { toast('Name and phone are both required.', 'error'); return; }
+
+    const duplicate = state.suppliers.find((s) => s.phone === phone && s.id !== id);
+    if (duplicate) { toast('Another supplier already uses this phone number.', 'error'); return; }
+
+    let supplier;
+    if (id) {
+      supplier = state.suppliers.find((s) => s.id === id);
+      if (!supplier) return;
+      supplier.name = name;
+      supplier.phone = phone;
+      toast('Supplier updated.');
+    } else {
+      supplier = { id: uid('s'), name, phone, transactions: [] };
+      state.suppliers.push(supplier);
+      toast('Supplier added.');
+    }
+
+    save();
+    openSupplierModal(supplier);
+  });
+
+  $('#deleteSupplierBtn').addEventListener('click', async () => {
+    const id = $('#supplierId').value;
+    const supplier = state.suppliers.find((s) => s.id === id);
+    if (!supplier) return;
+
+    const ok = await confirmDialog({
+      title: 'Delete supplier?',
+      message: 'This will permanently remove ' + supplier.name + ' and their ' + supplier.transactions.length + ' transaction(s).',
+      confirmText: 'Delete', danger: true
+    });
+    if (!ok) return;
+
+    state.suppliers = state.suppliers.filter((s) => s.id !== id);
+    closeModal('#supplierModal');
+    toast('Supplier removed.');
+    save();
+  });
+
+  $('#addSupplierTxnBtn').addEventListener('click', () => {
+    const id = $('#supplierId').value;
+    const supplier = state.suppliers.find((s) => s.id === id);
+    if (!supplier) { toast('Save the supplier first.', 'error'); return; }
+
+    const type = $('#supplierTxnType').value;
+    const note = $('#supplierTxnNote').value.trim();
+    const items = type === 'PURCHASE' ? readSupplierItemRows() : [];
+
+    let amount = num($('#supplierTxnAmount').value);
+    if (type === 'PURCHASE' && items.length) {
+      amount = round2(items.reduce((sum, i) => sum + i.qty * i.cost, 0));
+    }
+
+    if (amount <= 0) { toast('Enter an amount greater than zero.', 'error'); return; }
+
+    supplier.transactions.push({
+      id: uid('st'), date: new Date().toISOString(),
+      type, amount, note, items
+    });
+
+    toast(type === 'PURCHASE' ? 'Purchase recorded.' : 'Payment recorded.');
+    resetSupplierTxnForm();
+    save();
+    openSupplierModal(supplier);
+  });
+
+  /* ============================================================
+     STAFF FORM / ATTENDANCE
+     ============================================================ */
+  $('#staffForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const id = $('#staffId').value;
+    const name = $('#stName').value.trim();
+    const phone = $('#stPhone').value.trim();
+    const role = $('#stRole').value.trim();
+    const salary = num($('#stSalary').value);
+    const joinDate = $('#stJoinDate').value;
+
+    if (!name) { toast('Staff name is required.', 'error'); return; }
+    if (salary < 0) { toast('Salary cannot be negative.', 'error'); return; }
+    if (!joinDate) { toast('Joining date is required.', 'error'); return; }
+
+    let staff;
+    if (id) {
+      staff = state.staff.find((s) => s.id === id);
+      if (!staff) return;
+      Object.assign(staff, { name, phone, role, salary, joinDate });
+      toast('Staff updated.');
+    } else {
+      staff = {
+        id: uid('stf'), name, phone, role, salary, joinDate,
+        attendance: {}
+      };
+      state.staff.push(staff);
+      toast('“' + name + '” added to staff.');
+    }
+
+    save();
+    openStaffModal(staff);
+  });
+
+  $('#deleteStaffBtn').addEventListener('click', async () => {
+    const id = $('#staffId').value;
+    const staff = state.staff.find((s) => s.id === id);
+    if (!staff) return;
+
+    const ok = await confirmDialog({
+      title: 'Delete staff?',
+      message: 'This removes ' + staff.name + ', their salary and all their attendance records. Their payroll history will no longer count toward finance totals.',
+      confirmText: 'Delete', danger: true
+    });
+    if (!ok) return;
+
+    state.staff = state.staff.filter((s) => s.id !== id);
+    closeModal('#staffModal');
+    toast('Staff removed.');
+    save();
+  });
+
+  $('#attnPrevMonth').addEventListener('click', () => {
+    attnCursor.month--;
+    if (attnCursor.month < 0) { attnCursor.month = 11; attnCursor.year--; }
+    renderAttendanceCalendar();
+  });
+
+  $('#attnNextMonth').addEventListener('click', () => {
+    attnCursor.month++;
+    if (attnCursor.month > 11) { attnCursor.month = 0; attnCursor.year++; }
+    renderAttendanceCalendar();
+  });
+
+  $('#attnCalendar').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-attn-day]');
+    if (!btn || btn.classList.contains('disabled') || btn.classList.contains('empty')) return;
+    const staff = state.staff.find(s => s.id === currentStaffId);
+    if (!staff) return;
+
+    const key = btn.dataset.attnDay;
+    if (!staff.attendance) staff.attendance = {};
+
+    const cur = staff.attendance[key];
+    let next;
+    if (cur === 'present') next = 'absent';
+    else if (cur === 'absent') next = 'half';
+    else if (cur === 'half') next = null;
+    else next = 'present';
+
+    if (next) staff.attendance[key] = next;
+    else delete staff.attendance[key];
+
+    // update button class
+    const todayStr = todayKey();
+    const cls = ['attn-day'];
+    if (key === todayStr) cls.push('today');
+    if (next) cls.push(next);
+    btn.className = cls.join(' ');
+
+    persist();
+    renderStaffMonthlyPayroll();
+    renderStaff();
+  });
+
+  /* ============================================================
+     RESTOCK MODAL
+     ============================================================ */
+  function openRestock(productId) {
+    const p = state.products.find((x) => x.id === productId);
+    if (!p) return;
+    restockTarget = p.id;
+    $('#restockTitle').textContent = 'Restock · ' + p.name;
+    $('#restockInfo').textContent = 'Currently ' + p.quantity + ' in stock (reorder level ' + p.minimum + ').';
+    $('#restockQty').value = '10';
+    openModal('#restockModal');
+    setTimeout(() => $('#restockQty').select(), 40);
+  }
+
+  $('#restockChips').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-amt]');
+    if (!btn) return;
+    $('#restockQty').value = btn.dataset.amt;
+  });
+
+  $('#restockConfirm').addEventListener('click', () => {
+    const p = state.products.find((x) => x.id === restockTarget);
+    const qty = parseInt($('#restockQty').value, 10);
+    if (!p) return;
+    if (!Number.isFinite(qty) || qty < 1) { toast('Enter a whole number above zero.', 'error'); return; }
+
+    p.quantity += qty;
+    closeModal('#restockModal');
+    toast(qty + ' × ' + p.name + ' added to stock.');
+    save();
+  });
+
+  /* ============================================================
+     SALE LOGIC
+     ============================================================ */
+  function completeSale() {
+    if (!cart.length) { toast('Your cart is empty.', 'error'); return; }
+
+    const total = cartTotal();
+    const cash = round2(num($('#payCash').value));
+    const online = round2(num($('#payOnline').value));
+    const credit = round2(num($('#payCredit').value));
+    const paid = round2(cash + online + credit);
+
+    if (Math.abs(total - paid) > 0.005) {
+      toast('Payments must add up to the cart total.', 'error');
+      return;
+    }
+
+    for (const item of cart) {
+      const p = state.products.find((x) => x.id === item.productId);
+      if (!p || p.quantity < item.qty) {
+        toast('Not enough stock for ' + item.name + '.', 'error');
+        return;
+      }
+    }
+
+    const phone = $('#saleCustomerPhone').value.trim();
+    const name = $('#saleCustomerName').value.trim();
+    const note = $('#saleNote').value.trim();
+
+    if (credit > 0 && !phone) {
+      toast('An udhari sale needs a customer phone number.', 'error');
+      return;
+    }
+
+    let customer = phone ? state.customers.find((c) => c.phone === phone) : null;
+
+    if (!customer && phone) {
+      if (!name) { toast('Enter a name to create this customer.', 'error'); return; }
+      customer = { id: uid('c'), name, phone, balance: 0, transactions: [] };
+      state.customers.push(customer);
+    }
+
+    if (customer && name && customer.name !== name) customer.name = name;
+
+    cart.forEach((item) => {
+      const p = state.products.find((x) => x.id === item.productId);
+      p.quantity -= item.qty;
+    });
+
+    if (customer && credit > 0) {
+      customer.balance = round2(customer.balance + credit);
+      customer.transactions.push({
+        id: uid('t'), date: new Date().toISOString(),
+        type: 'GAVE', amount: credit,
+        note: note || 'Sale on credit', balance: customer.balance
+      });
+    }
+
+    state.sales.push({
+      id: nextInvoiceNo(), date: new Date().toISOString(),
+      customerId: customer ? customer.id : null,
+      customerName: customer ? customer.name : (name || 'Walk-in'),
+      phone: phone || '',
+      items: cart.map((i) => ({ productId: i.productId, code: i.code, name: i.name, qty: i.qty, price: i.price, cost: i.cost })),
+      total, cash, online, credit, note, voided: false
+    });
+
+    const invoice = state.sales[state.sales.length - 1].id;
+
+    cart = [];
+    payDirty = false;
+    ['#payCash', '#payOnline', '#payCredit', '#saleCustomerName', '#saleCustomerPhone', '#saleNote', '#saleProduct', '#salePrice', '#saleLineTotal'].forEach((sel) => { $(sel).value = ''; });
+    $('#saleQty').value = '1';
+    $('#stockHint').textContent = '';
+    $('#customerHint').textContent = '';
+
+    save();
+    toast('Sale ' + invoice + ' recorded · ' + money(total));
+  }
+
+  /* ============================================================
+     CSV / JSON EXPORT
+     ============================================================ */
+  function downloadFile(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function exportCsv() {
+    const list = filteredSales();
+    const rows = [['Invoice', 'Date', 'Customer', 'Phone', 'Items', 'Cash', 'Online', 'Udhari', 'Total', 'Status']];
+
+    list.forEach((s) => {
+      rows.push([
+        s.id,
+        new Date(s.date).toLocaleString('en-IN'),
+        s.customerName || 'Walk-in',
+        s.phone || '',
+        s.items.map((i) => i.name + ' x' + i.qty).join(' | '),
+        s.cash, s.online, s.credit, s.total,
+        s.voided ? 'Void' : 'Completed'
+      ]);
+    });
+
+    const csv = rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+    downloadFile('\ufeff' + csv, 'dukaandesk-sales.csv', 'text/csv;charset=utf-8');
+    toast('CSV exported.');
+  }
+
+  /* ============================================================
+     EVENT WIRING
+     ============================================================ */
+  $('#nav').addEventListener('click', (e) => {
+    const btn = e.target.closest('.nav-item');
+    if (btn) navigate(btn.dataset.page);
+  });
+
+  document.addEventListener('click', (e) => {
+    const go = e.target.closest('[data-go]');
+    if (go) { navigate(go.dataset.go); return; }
+
+    const closer = e.target.closest('[data-close]');
+    if (closer) { closeModalEl(closer.closest('.modal')); return; }
+
+    if (e.target.classList.contains('modal')) { closeModalEl(e.target); return; }
+
+    if (!e.target.closest('#bellBtn') && !e.target.closest('#notifPopover')) {
+      $('#notifPopover').classList.remove('open');
+    }
+  });
+
+  $('#collapseBtn').addEventListener('click', () => {
+    settings.layout = settings.layout === 'compact' ? 'expanded' : 'compact';
+    persistSettings();
+    applySettings();
+  });
+
+  $('#drawerBtn').addEventListener('click', () => document.body.classList.toggle('nav-open'));
+  $('#backdrop').addEventListener('click', () => document.body.classList.remove('nav-open'));
+
+  $('#themeBtn').addEventListener('click', () => {
+    settings.theme = effectiveTheme() === 'dark' ? 'light' : 'dark';
+    persistSettings();
+    applySettings();
+  });
+
+  $('#bellBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    $('#notifPopover').classList.toggle('open');
+  });
+
+  $('#searchInput').addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    applySearch();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (document.querySelector('.modal.open')) {
+        closeModalEl(document.querySelector('.modal.open'));
+      } else if ($('#notifPopover').classList.contains('open')) {
+        $('#notifPopover').classList.remove('open');
+      } else if (document.body.classList.contains('nav-open')) {
+        document.body.classList.remove('nav-open');
+      }
+    }
+
+    if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
+      e.preventDefault();
+      $('#searchInput').focus();
+    }
+
+    if (e.key === 'Enter' && document.activeElement === $('#saleProduct')) {
+      e.preventDefault();
+      addToCart();
+    }
+  });
+
+  $('#qaProduct').addEventListener('click', () => { navigate('inventory'); openProductModal(null); });
+  $('#qaCustomer').addEventListener('click', () => { navigate('customers'); openCustomerModal(null); });
+  $('#qaStaff').addEventListener('click', () => { navigate('staff'); openStaffModal(null); });
+
+  $('#invCategory').addEventListener('change', renderInventoryTable);
+  $('#invStock').addEventListener('change', renderInventoryTable);
+  $('#addProductBtn').addEventListener('click', () => openProductModal(null));
+
+  document.addEventListener('click', async (e) => {
+    const restockBtn = e.target.closest('[data-restock]');
+    if (restockBtn) { openRestock(restockBtn.dataset.restock); return; }
+
+    const editBtn = e.target.closest('[data-edit-product]');
+    if (editBtn) {
+      const p = state.products.find((x) => x.id === editBtn.dataset.editProduct);
+      if (p) openProductModal(p);
+      return;
+    }
+
+    const delBtn = e.target.closest('[data-delete-product]');
+    if (delBtn) {
+      const p = state.products.find((x) => x.id === delBtn.dataset.deleteProduct);
+      if (!p) return;
+      const ok = await confirmDialog({
+        title: 'Delete product?',
+        message: '“' + p.name + '” will be removed from inventory. Existing sales keep their records.',
+        confirmText: 'Delete', danger: true
+      });
+      if (!ok) return;
+      state.products = state.products.filter((x) => x.id !== p.id);
+      cart = cart.filter((i) => i.productId !== p.id);
+      toast('Product removed.');
+      save();
+      return;
+    }
+
+    const editCust = e.target.closest('[data-edit-customer]');
+    if (editCust) {
+      const c = state.customers.find((x) => x.id === editCust.dataset.editCustomer);
+      if (c) openCustomerModal(c);
+      return;
+    }
+
+    const editSup = e.target.closest('[data-edit-supplier]');
+    if (editSup) {
+      const s = state.suppliers.find((x) => x.id === editSup.dataset.editSupplier);
+      if (s) openSupplierModal(s);
+      return;
+    }
+
+    const editStaff = e.target.closest('[data-edit-staff]');
+    if (editStaff) {
+      const st = state.staff.find((x) => x.id === editStaff.dataset.editStaff);
+      if (st) openStaffModal(st);
+      return;
+    }
+
+    const markToday = e.target.closest('[data-mark-today]');
+    if (markToday) {
+      const staff = state.staff.find((x) => x.id === markToday.dataset.staffId);
+      if (!staff) return;
+      const status = markToday.dataset.markToday;
+      const tKey = todayKey();
+      if (!staff.attendance) staff.attendance = {};
+      if (staff.attendance[tKey] === status) delete staff.attendance[tKey];
+      else staff.attendance[tKey] = status;
+      persist();
+      renderStaff();
+      renderDashboard();
+      renderFinance();
+      return;
+    }
+
+    const voidBtn = e.target.closest('[data-void-sale]');
+    if (voidBtn) {
+      const sale = state.sales.find((s) => s.id === voidBtn.dataset.voidSale);
+      if (!sale || sale.voided) return;
+      const ok = await confirmDialog({
+        title: 'Void ' + sale.id + '?',
+        message: 'Stock will be restored and any udhari on this sale will be reversed.',
+        confirmText: 'Void sale', danger: true
+      });
+      if (!ok) return;
+
+      sale.items.forEach((item) => {
+        const p = state.products.find((x) => x.id === item.productId);
+        if (p) p.quantity += item.qty;
+      });
+
+      if (sale.credit > 0) {
+        const c = state.customers.find((x) => x.id === sale.customerId) ||
+                  state.customers.find((x) => x.phone === sale.phone);
+        if (c) {
+          c.balance = round2(c.balance - sale.credit);
+          c.transactions.push({
+            id: uid('t'), date: new Date().toISOString(),
+            type: 'GOT', amount: sale.credit,
+            note: 'Reversal · ' + sale.id, balance: c.balance
+          });
+        }
+      }
+
+      sale.voided = true;
+      toast(sale.id + ' voided.');
+      save();
+      return;
+    }
+  });
+
+  $('#addCustomerBtn').addEventListener('click', () => openCustomerModal(null));
+  $('#addSupplierBtn').addEventListener('click', () => openSupplierModal(null));
+  $('#addStaffBtn').addEventListener('click', () => openStaffModal(null));
+
+  $('#saleProduct').addEventListener('input', updateSaleHint);
+  $('#saleProduct').addEventListener('change', updateSaleHint);
+  $('#saleQty').addEventListener('input', updateLineTotal);
+  $('#salePrice').addEventListener('input', updateLineTotal);
+  $('#addCartBtn').addEventListener('click', addToCart);
+
+  $('#saleCustomerPhone').addEventListener('input', () => {
+    const phone = $('#saleCustomerPhone').value.trim();
+    const c = state.customers.find((x) => x.phone === phone);
+    if (c && $('#saleCustomerName').value.trim() !== c.name) {
+      $('#saleCustomerName').value = c.name;
+    }
+    const hint = $('#customerHint');
+    if (c) hint.textContent = 'Existing customer · balance ' + money(c.balance);
+    else if (phone) hint.textContent = 'New customer will be created on save.';
+    else hint.textContent = '';
+  });
+
+  $('#saleCustomerName').addEventListener('input', () => {
+    const name = $('#saleCustomerName').value.trim().toLowerCase();
+    const c = state.customers.find((x) => x.name.toLowerCase() === name);
+    if (c && !$('#saleCustomerPhone').value.trim()) {
+      $('#saleCustomerPhone').value = c.phone;
+      $('#customerHint').textContent = 'Existing customer · balance ' + money(c.balance);
+    }
+  });
+
+  ['#payCash', '#payOnline', '#payCredit'].forEach((sel) => {
+    $(sel).addEventListener('input', () => {
+      payDirty = true;
+      syncPayments();
+    });
+  });
+
+  $('#fillRemaining').addEventListener('click', () => {
+    const total = cartTotal();
+    const paid = round2(num($('#payCash').value) + num($('#payOnline').value) + num($('#payCredit').value));
+    const remaining = round2(total - paid);
+    if (Math.abs(remaining) < 0.005) return;
+    $('#payCash').value = round2(num($('#payCash').value) + remaining).toFixed(2);
+    payDirty = true;
+    syncPayments();
+  });
+
+  $('#clearCart').addEventListener('click', () => {
+    if (!cart.length) return;
+    cart = [];
+    payDirty = false;
+    ['#payCash', '#payOnline', '#payCredit'].forEach((s) => { $(s).value = ''; });
+    renderCart();
+    toast('Cart cleared.', 'info');
+  });
+
+  $('#completeSale').addEventListener('click', completeSale);
+
+  $('#cartBody').addEventListener('input', (e) => {
+    const input = e.target.closest('[data-qty]');
+    if (!input) return;
+
+    const idx = Number(input.dataset.qty);
+    const item = cart[idx];
+    if (!item) return;
+
+    const product = state.products.find((p) => p.id === item.productId);
+    let q = parseInt(input.value, 10);
+
+    if (!Number.isFinite(q) || q < 1) {
+      input.classList.add('invalid');
+      return;
+    }
+    input.classList.remove('invalid');
+
+    if (product && q > product.quantity) {
+      q = product.quantity;
+      input.value = String(q);
+      toast('Only ' + product.quantity + ' in stock.', 'error');
+    }
+
+    item.qty = q;
+    const row = input.closest('tr');
+    const cell = row.querySelector('[data-line-total]');
+    if (cell) cell.textContent = money(item.qty * item.price);
+
+    if (!payDirty) {
+      const total = cartTotal();
+      $('#payCash').value = total ? total.toFixed(2) : '';
+    }
+    syncPayments();
+  });
+
+  $('#cartBody').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-remove-line]');
+    if (!btn) return;
+    cart.splice(Number(btn.dataset.removeLine), 1);
+    renderCart();
+  });
+
+  $('#repRange').addEventListener('change', renderReports);
+  $('#finRange').addEventListener('change', renderFinance);
+  $('#exportCsv').addEventListener('click', exportCsv);
+
+  $('#themeSelect').addEventListener('change', (e) => { settings.theme = e.target.value; persistSettings(); applySettings(); });
+  $('#accentColor').addEventListener('input', (e) => { settings.accent = e.target.value; persistSettings(); applySettings(); });
+  $('#layoutSelect').addEventListener('change', (e) => { settings.layout = e.target.value; persistSettings(); applySettings(); });
+  $('#densitySelect').addEventListener('change', (e) => { settings.density = e.target.value; persistSettings(); applySettings(); });
+  $('#shopNameInput').addEventListener('input', (e) => {
+    settings.shopName = e.target.value;
+    persistSettings();
+    $('#dashShop').textContent = settings.shopName || 'My Shop';
+    $('#avatar').textContent = initials(settings.shopName);
+  });
+  $('#currencyInput').addEventListener('input', (e) => {
+    settings.currency = e.target.value || '₹';
+    persistSettings();
+    renderAll();
+  });
+
+  $('#resetAppearance').addEventListener('click', async () => {
+    const ok = await confirmDialog({ title: 'Reset appearance?', message: 'Theme, accent, layout and density return to defaults. Your data stays untouched.', confirmText: 'Reset' });
+    if (!ok) return;
+    settings = Object.assign({}, DEFAULT_SETTINGS, { shopName: settings.shopName, currency: settings.currency });
+    persistSettings();
+    applySettings();
+    toast('Appearance reset.');
+  });
+
+  $('#exportData').addEventListener('click', () => {
+    downloadFile(JSON.stringify(state, null, 2), 'dukaandesk-data.json', 'application/json');
+    toast('Data exported.');
+  });
+
+  $('#importData').addEventListener('click', () => $('#importFile').click());
+
+  $('#importFile').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        if (!parsed || !Array.isArray(parsed.products) || !Array.isArray(parsed.customers) || !Array.isArray(parsed.sales)) {
+          throw new Error('Unexpected file format.');
+        }
+        const ok = await confirmDialog({
+          title: 'Replace all data?',
+          message: 'Importing will overwrite the current products, customers, suppliers, staff and sales.',
+          confirmText: 'Import', danger: true
+        });
+        if (!ok) return;
+        const previousState = state;
+        state = {
+          products: parsed.products || [],
+          customers: parsed.customers || [],
+          suppliers: parsed.suppliers || [],
+          staff: parsed.staff || [],
+          sales: parsed.sales || []
+        };
+        cart = [];
+        payDirty = false;
+        renderAll();
+        if (!await persist()) {
+          state = previousState;
+          renderAll();
+          throw new Error('Imported data was not saved.');
+        }
+        toast('Data imported.');
+      } catch (err) {
+        toast('Import failed: ' + err.message, 'error');
+      } finally {
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  $('#confirmOk').addEventListener('click', () => {
+    const r = confirmResolve;
+    confirmResolve = null;
+    if (r) r(true);
+    closeModalEl($('#confirmModal'));
+  });
+
+  $('#confirmCancel').addEventListener('click', () => {
+    const r = confirmResolve;
+    confirmResolve = null;
+    if (r) r(false);
+    closeModalEl($('#confirmModal'));
+  });
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (settings.theme === 'system') applySettings();
+  });
+
+  /* ============================================================
+     BOOT
+     ============================================================ */
+  buildSwatches();
+  applySettings();
+  renderAll();
+  renderCart();
+
+  console.info('%cDukaan Desk', 'font-weight:bold;color:#4f46e5', '— ready.');
+})();
+</script>
+</body>
+</html>

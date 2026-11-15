@@ -11,11 +11,14 @@ receive shop records.
 
 ## Features
 
-- Inventory management, low-stock indicators, product codes and QR labels
+- Inventory management with per-item cost prices, cost-based stock valuation and low-stock indicators
 - Customer accounts, balances and transaction histories
+- Supplier purchase/payment ledgers and staff attendance/payroll
 - Multi-item sales with cash, online, credit and split payment options
-- Dashboard summaries and sales reports
+- Dashboard summaries, cost-of-goods-sold profit, finance view and sales reports
+- Account-scoped JSON data import/export and appearance settings
 - Local accounts with optional passwords and separate shop-data profiles
+- Password-verified account deletion, with export and extra confirmations for passwordless accounts
 - Encrypted local records, protected by the operating system's secure storage
 - Desktop interface and bundled fonts/icons, so the app itself does not need an
   internet connection
@@ -42,7 +45,7 @@ buttons open the release page so a visitor can choose a file.
 
 ```text
 app.py                       Flask app running locally inside the desktop app
-tools/                       Accounts, encrypted storage, inventory and sales
+tools/                       Accounts, encrypted workspace, inventory and sales
 frontend/templates/          Local app interface
 frontend/static/             Local styles, icons and font assets
 desktop/                     Electron shell and installer configuration
@@ -112,6 +115,11 @@ currently provide a cross-device transfer feature.
 
 Passwordless sign-in is convenient, but does not stop another person using the
 same operating-system account from opening that shop profile.
+
+On first use of the updated interface, existing product, customer and sales
+records are migrated into the encrypted, per-account workspace file. Use the
+app's Settings page to export or import workspace JSON; keep exports private
+because they contain customer and sales information.
 
 ## Product website and deployment
 

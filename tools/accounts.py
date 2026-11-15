@@ -170,3 +170,31 @@ def update_account(account_id, shop_name=None, password=None, remove_password=Fa
 
     save_json(_accounts_path(), {"accounts": accounts})
     return account
+
+
+def delete_account(account_id, password=None):
+    stored_accounts = _read_accounts()
+    account = next((item for item in stored_accounts if item["id"] == account_id), None)
+    if not account:
+        raise ValueError("Local account not found.")
+    if account.get("password_hash") and not verify_password(account, password):
+        raise ValueError("The account password is incorrect.")
+
+    remaining = [item for item in stored_accounts if item["id"] != account_id]
+    if account.get("is_owner") and remaining:
+        remaining[0]["is_owner"] = True
+
+    profile_path = profile_directory(account_id)
+    archived_path = profile_path + ".deleting-" + uuid.uuid4().hex
+    if os.path.exists(profile_path):
+        os.replace(profile_path, archived_path)
+    try:
+        save_json(_accounts_path(), {"accounts": remaining})
+    except Exception:
+        if os.path.exists(archived_path):
+            os.replace(archived_path, profile_path)
+        raise
+
+    if os.path.exists(archived_path):
+        shutil.rmtree(archived_path)
+    return remaining

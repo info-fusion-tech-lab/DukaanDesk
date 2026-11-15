@@ -1,6 +1,7 @@
 import sys
 import os
 import secrets
+import json
 from io import BytesIO
 from flask import (
     Flask,
@@ -32,6 +33,7 @@ from tools.paths import (
     reset_profile_storage_path,
     set_profile_storage_path,
 )
+from tools.workspace_data import load_settings, load_workspace, save_settings, save_workspace
 from werkzeug.utils import safe_join
 
 app = Flask(
@@ -185,7 +187,12 @@ def manage_accounts():
                 flash("Local account created successfully.", "success")
                 return redirect(url_for("manage_accounts"))
 
-    return render_template("accounts.html", accounts=accounts.list_accounts())
+    return render_template(
+        "accounts.html",
+        accounts=accounts.list_accounts(),
+        initial_settings=load_settings(owner["shop_name"]),
+        active_account_page="accounts",
+    )
 
 
 @app.route("/account", methods=["GET", "POST"])
@@ -218,7 +225,114 @@ def account_settings():
                 flash("Account settings saved.", "success")
                 return redirect(url_for("account_settings"))
 
-    return render_template("account_settings.html", account=account)
+    return render_template(
+        "account_settings.html",
+        account=account,
+        initial_settings=load_settings(account["shop_name"]),
+        active_account_page="settings",
+    )
+
+
+@app.route("/account/export")
+def export_account_data():
+    account = accounts.get_account(session["account_id"])
+    return _send_account_export(account)
+
+
+@app.route("/accounts/<account_id>/export")
+def export_managed_account_data(account_id):
+    owner = accounts.get_account(session["account_id"])
+    if not owner.get("is_owner"):
+        abort(403)
+    account = accounts.get_account(account_id)
+    if not account:
+        abort(404)
+    return _send_account_export(account)
+
+
+def _send_account_export(account):
+    token = set_profile_storage_path(accounts.profile_directory(account["id"]))
+    try:
+        data = {
+            **load_workspace(),
+            "settings": load_settings(account["shop_name"]),
+        }
+        payload = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+    finally:
+        reset_profile_storage_path(token)
+
+    session["account_export_ready"] = account["id"]
+    return send_file(
+        BytesIO(payload),
+        mimetype="application/json",
+        as_attachment=True,
+        download_name=f"dukaandesk-{account['id']}-export.json",
+    )
+
+
+@app.route("/account/delete", methods=["POST"])
+def delete_local_account():
+    account = accounts.get_account(session["account_id"])
+    if not account.get("password_hash") and (
+        session.get("account_export_ready") != account["id"]
+        or request.form.get("confirm_export") != "on"
+        or request.form.get("confirm_phrase") != "DELETE"
+    ):
+        flash("Export your data and complete all confirmations before deleting this account.", "error")
+        return redirect(url_for("account_settings"))
+
+    try:
+        remaining = accounts.delete_account(
+            account["id"],
+            password=request.form.get("current_password", ""),
+        )
+    except ValueError as error:
+        flash(str(error), "error")
+        return redirect(url_for("account_settings"))
+
+    session.clear()
+    if remaining:
+        return redirect(url_for("login"))
+    return redirect(url_for("setup"))
+
+
+@app.route("/accounts/<account_id>/delete", methods=["POST"])
+def delete_managed_account(account_id):
+    owner = accounts.get_account(session["account_id"])
+    if not owner.get("is_owner"):
+        abort(403)
+    account = accounts.get_account(account_id)
+    if not account:
+        abort(404)
+
+    if not account.get("password_hash") and (
+        session.get("account_export_ready") != account["id"]
+        or request.form.get("confirm_export") != "on"
+        or request.form.get("confirm_phrase") != "DELETE"
+    ):
+        flash("Export this account's data and complete all confirmations before deletion.", "error")
+        return redirect(url_for("manage_accounts"))
+
+    try:
+        remaining = accounts.delete_account(
+            account["id"],
+            password=request.form.get("target_password", ""),
+        )
+    except ValueError as error:
+        flash(str(error), "error")
+        return redirect(url_for("manage_accounts"))
+
+    if account["id"] == session.get("account_id"):
+        session.clear()
+        if remaining:
+            return redirect(url_for("login"))
+        return redirect(url_for("setup"))
+
+    if session.get("account_export_ready") == account["id"]:
+        session.pop("account_export_ready", None)
+    flash(f"Account '{account['username']}' and its local data were deleted.", "success")
+    return redirect(url_for("manage_accounts"))
+
 
 # ---------- FAVICON ----------
 @app.route('/favicon.ico')
@@ -233,42 +347,41 @@ def health():
 # ---------- DASHBOARD ----------
 @app.route('/dashboard')
 def dashboard():
-    """Dashboard with full stats"""
-    products = storage.load_products()
-    customers = customer_manager.load_customers()
-    sales = sales_manager.load_sales()  # dict of sales
+    account = accounts.get_account(session["account_id"])
+    return render_template(
+        "workspace.html",
+        initial_workspace=load_workspace(),
+        initial_settings=load_settings(account["shop_name"]),
+    )
 
-    total_products = len(products)
-    total_inventory_items = sum(p.get('Quantity', 0) for p in products.values())
-    
-    # Customer financials
-    total_receivables = customer_manager.get_total_receivables()  # positive balances
-    total_payable = sum(abs(c['Balance']) for c in customers.values() if c['Balance'] < 0)
-    
-    # Sales stats
-    total_sales_count = len(sales)
-    total_revenue = sum(sale.get('TotalAmount', 0) for sale in sales.values())
-    
-    # Low stock count
-    low_stock_count = sum(1 for p in products.values() if p.get('Quantity', 0) <= p.get('MinStockLevel', 5))
-    
-    # Recent sales (last 5)
-    recent_sales = sorted(sales.items(), key=lambda x: x[1].get('Timestamp', ''), reverse=True)[:5]
-    
-    return render_template('index.html',
-                           total_products=total_products,
-                           total_inventory_items=total_inventory_items,
-                           total_receivables=total_receivables,
-                           total_payable=total_payable,
-                           total_sales_count=total_sales_count,
-                           total_revenue=total_revenue,
-                           low_stock_count=low_stock_count,
-                           customers_count=len(customers),
-                           recent_sales=recent_sales)
+
+@app.route("/api/workspace/data", methods=["PUT"])
+def update_workspace_data():
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({"success": False, "message": "A valid JSON object is required."}), 400
+    try:
+        saved = save_workspace(data)
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+    return jsonify({"success": True, "data": saved})
+
+
+@app.route("/api/workspace/settings", methods=["PUT"])
+def update_workspace_settings():
+    data = request.get_json(silent=True)
+    account = accounts.get_account(session["account_id"])
+    try:
+        saved = save_settings(data, account["shop_name"])
+    except ValueError as error:
+        return jsonify({"success": False, "message": str(error)}), 400
+    return jsonify({"success": True, "settings": saved})
 
 # ---------- INVENTORY ----------
 @app.route('/inventory', methods=['GET', 'POST'])
 def inventory():
+    if request.method == 'GET':
+        return redirect(url_for('dashboard'))
     if request.method == 'POST':
         name = request.form.get('name')
         price = float(request.form.get('price', 0))
@@ -309,6 +422,8 @@ def inventory():
 # ---------- CUSTOMERS ----------
 @app.route('/customers', methods=['GET', 'POST'])
 def customers():
+    if request.method == 'GET':
+        return redirect(url_for('dashboard'))
     if request.method == 'POST':
         phone = request.form.get('phone')
         name = request.form.get('name')
@@ -425,10 +540,7 @@ def delete_customer_route(phone):
 # ---------- SALES PAGE ----------
 @app.route('/sales')
 def sales_page():
-    """Render the sales page with products and customers"""
-    products = storage.load_products()
-    customers = customer_manager.load_customers()
-    return render_template('sales.html', products=products, customers=customers)
+    return redirect(url_for('dashboard'))
 
 # ---------- SALES API ----------
 @app.route('/api/sales', methods=['POST'])
@@ -453,13 +565,7 @@ def sales_history():
 # ---------- REPORTS ----------
 @app.route('/reports')
 def reports():
-    sales_data = sales_manager.get_sales_history()  # dict
-    # Convert to list with sale_id
-    sales_list = []
-    for sid, sale in sales_data.items():
-        sales_list.append({'id': sid, **sale})
-    # Sort by timestamp descending (already sorted in get_sales_history)
-    return render_template('reports.html', sales=sales_list)
+    return redirect(url_for('dashboard'))
 
 # ---------- MAIN ----------
 if __name__ == '__main__':
